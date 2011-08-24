@@ -13,7 +13,7 @@
 # TODO: Make sure record.target ends with a period?
 
 import cgi
-import cgitb;cgitb.enable()
+#import cgitb;cgitb.enable()
 import sys
 import urllib
 
