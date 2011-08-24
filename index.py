@@ -14,11 +14,9 @@
 
 import cgi
 #import cgitb;cgitb.enable()
+import dns.resolver
 import sys
 import urllib
-
-sys.path.append('/home/kingan6/public_html/check_xmpp_dns')
-import dns.resolver
 
 # This is the main HTML template that makes up the page
 MAIN_TEMPLATE = """<!DOCTYPE html>
