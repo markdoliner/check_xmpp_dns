@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (c) 2011, Mark Doliner
+# Copyright (c) 2011-2012, Mark Doliner
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,9 +35,12 @@
 #       realize they need to use ssl?  (biscotti.com)
 # TODO: Make sure record.target ends with a period?
 
+import gevent.monkey; gevent.monkey.patch_socket()
+
 import cgi
-#import cgitb;cgitb.enable()
+#import cgitb; cgitb.enable()
 import dns.resolver
+import gevent.wsgi
 import sys
 import urllib
 
@@ -362,10 +365,8 @@ def get_main_body(hostname):
 
 	return '\n'.join(ret)
 
-def main():
-	print('Content-Type: text/html\n\n')
-
-	form = cgi.FieldStorage()
+def main(env, start_response):
+	form = cgi.FieldStorage(environ=env)
 
 	if 'h' in form:
 		hostname = form['h'].value
@@ -379,11 +380,14 @@ def main():
 		body = ''
 		submit_button_disabled = 'disabled="disabled"'
 
-	print(MAIN_TEMPLATE % dict(
+	response_body = MAIN_TEMPLATE % dict(
 		hostname=cgi.escape(hostname, True),
 		body=body,
 		submit_button_disabled=submit_button_disabled,
-	))
+	)
+
+	start_response('200 OK', [('Content-Type', 'text/html')])
+	return [response_body]
 
 if __name__ == '__main__':
-	main()
+	gevent.wsgi.WSGIServer(('', 1000), application=main, spawn=None).serve_forever()
