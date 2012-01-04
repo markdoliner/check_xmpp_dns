@@ -35,7 +35,7 @@
 #       realize they need to use ssl?  (biscotti.com)
 # TODO: Make sure record.target ends with a period?
 
-import gevent.monkey; gevent.monkey.patch_socket()
+#import gevent.monkey; gevent.monkey.patch_all()
 
 import cgi
 #import cgitb; cgitb.enable()
