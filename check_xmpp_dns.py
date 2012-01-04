@@ -41,6 +41,7 @@ import cgi
 #import cgitb; cgitb.enable()
 import dns.resolver
 import gevent.wsgi
+import logging
 import sys
 import urllib
 
@@ -318,6 +319,9 @@ def get_main_body(hostname):
 		client_records = dns.resolver.query('_xmpp-client._tcp.%s' % hostname, 'SRV')
 	except dns.resolver.NXDOMAIN, e:
 		client_records = []
+	except dns.resolver.NoAnswer:
+		# TODO: Show a specific message for this
+		server_records = []
 	except dns.resolver.Timeout, e:
 		# TODO: Show a specific message for this
 		client_records = []
@@ -326,6 +330,10 @@ def get_main_body(hostname):
 	try:
 		server_records = dns.resolver.query('_xmpp-server._tcp.%s' % hostname, 'SRV')
 	except dns.resolver.NXDOMAIN, e:
+		server_records = []
+	except dns.resolver.NoAnswer:
+		# TODO: Show a specific message for this
+		# Happens for meridianoffices.com
 		server_records = []
 	except dns.resolver.Timeout, e:
 		# TODO: Show a specific message for this
@@ -365,7 +373,7 @@ def get_main_body(hostname):
 
 	return '\n'.join(ret)
 
-def main(env, start_response):
+def handle_request(env, start_response):
 	form = cgi.FieldStorage(environ=env)
 
 	if 'h' in form:
@@ -389,5 +397,13 @@ def main(env, start_response):
 	start_response('200 OK', [('Content-Type', 'text/html')])
 	return [response_body]
 
+def application(env, start_response):
+	try:
+		return handle_request(env, start_response)
+	except:
+		logging.exception('Unknown error handling request.  env=%s', env)
+		raise
+
 if __name__ == '__main__':
-	gevent.wsgi.WSGIServer(('', 1000), application=main, spawn=None).serve_forever()
+	logging.basicConfig(filename='log')
+	gevent.wsgi.WSGIServer(('', 1000), application=application, spawn=None).serve_forever()
