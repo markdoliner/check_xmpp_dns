@@ -321,7 +321,7 @@ def get_main_body(hostname):
 		client_records = []
 	except dns.resolver.NoAnswer:
 		# TODO: Show a specific message for this
-		server_records = []
+		client_records = []
 	except dns.resolver.Timeout, e:
 		# TODO: Show a specific message for this
 		client_records = []
