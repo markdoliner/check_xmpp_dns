@@ -206,13 +206,13 @@ ex: <a class="greyhiddenlink" href="?h=kingant.net">kingant.net</a>
 </p>
 
 <p><b>This Page</b><br>
-Created by <a href="http://kingant.net/">Mark Doliner</a><br>
+Created by <a href="https://kingant.net/">Mark Doliner</a><br>
 <a href="https://github.com/markdoliner/check_xmpp_dns">Source available</a> on GitHub
 </p>
 
 <p><b>Other Resources</b><br>
 <a href="http://www.olark.com/gtalk/check_srv">Olark's DNS SRV help page</a><br>
-<a href="http://www.google.com/support/a/bin/answer.py?answer=34143">Google's official help page for configuring server records</a><br>
+<a href="https://support.google.com/a/answer/34143">Google's official help page for configuring server records</a><br>
 <a href="http://www.process-one.net/en/imtrends/">IMtrends</a> queries for information about a given XMPP server
 </p>
 
