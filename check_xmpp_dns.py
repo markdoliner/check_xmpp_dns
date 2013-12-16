@@ -42,6 +42,7 @@
 
 import cgi
 #import cgitb; cgitb.enable()
+import dns.exception
 import dns.resolver
 import gevent.wsgi
 import logging
@@ -320,6 +321,9 @@ def get_main_body(hostname):
 	# Lookup records
 	try:
 		client_records = dns.resolver.query('_xmpp-client._tcp.%s' % hostname, 'SRV')
+	except dns.exception.SyntaxError, e:
+		# TODO: Show "invalid hostname" for this
+		client_records = []
 	except dns.resolver.NXDOMAIN, e:
 		client_records = []
 	except dns.resolver.NoAnswer:
@@ -332,6 +336,9 @@ def get_main_body(hostname):
 
 	try:
 		server_records = dns.resolver.query('_xmpp-server._tcp.%s' % hostname, 'SRV')
+	except dns.exception.SyntaxError, e:
+		# TODO: Show "invalid hostname" for this
+		server_records = []
 	except dns.resolver.NXDOMAIN, e:
 		server_records = []
 	except dns.resolver.NoAnswer:
