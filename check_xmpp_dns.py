@@ -34,6 +34,9 @@
 # TODO: Better info message if port is 5223?  Talk about how clients might not
 #       realize they need to use ssl?  (biscotti.com)
 # TODO: Make sure record.target ends with a period?
+# TODO: Add JavaScript to strip leading and trailing whitespace in the
+#       hostname before submitting the form, so that the hostname is pretty in
+#       the URL.
 
 #import gevent.monkey; gevent.monkey.patch_all()
 
@@ -377,7 +380,7 @@ def handle_request(env, start_response):
 	form = cgi.FieldStorage(environ=env)
 
 	if 'h' in form:
-		hostname = form['h'].value
+		hostname = form['h'].value.strip()
 	else:
 		hostname = ''
 
