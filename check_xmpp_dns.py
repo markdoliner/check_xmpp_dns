@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (c) 2011-2012, Mark Doliner
+# Copyright (c) 2011-2013, Mark Doliner
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
