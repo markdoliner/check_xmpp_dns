@@ -46,7 +46,6 @@ import dns.exception
 import dns.resolver
 import gevent.wsgi
 import logging
-import sys
 import urllib
 
 # This is the main HTML template that makes up the page
