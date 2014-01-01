@@ -254,10 +254,10 @@ TEMPLATE_RECORD = """<tr>
 %(errors)s
 </tr>"""
 
-def sort_records(records):
+def _sort_records(records):
     return sorted(records, key=lambda record: '%10d %10d %50s %d' % (record.priority, 1000000000 - record.weight, record.target, record.port))
 
-def get_records(records, peer_name, record_type, standard_port, conflicting_records):
+def _get_records(records, peer_name, record_type, standard_port, conflicting_records):
     FLAG_NON_STANDARD_PORT = 1
     FLAG_CLIENT_SERVER_SHARED_PORT = 2
     footnotes_for_these_records = dict()
@@ -310,7 +310,7 @@ def get_records(records, peer_name, record_type, standard_port, conflicting_reco
 
     return ('\n'.join(rows), '\n'.join(footnotes))
 
-def get_main_body(hostname):
+def _get_main_body(hostname):
     # Record domain name
     open('requestledger.txt', 'a').write('%s\n' % urllib.quote(hostname))
 
@@ -353,8 +353,8 @@ def get_main_body(hostname):
     ret = []
 
     if client_records:
-        client_records = sort_records(client_records)
-        (rows, footnotes) = get_records(client_records, 'clients', 'client-to-server', 5222, server_records_by_endpoint)
+        client_records = _sort_records(client_records)
+        (rows, footnotes) = _get_records(client_records, 'clients', 'client-to-server', 5222, server_records_by_endpoint)
         ret.append(TEMPLATE_RECORDS_CLIENT % dict(
             footnotes=footnotes,
             hostname=cgi.escape(hostname, True),
@@ -368,8 +368,8 @@ def get_main_body(hostname):
     ret.append('')
 
     if server_records:
-        server_records = sort_records(server_records)
-        (rows, footnotes) = get_records(server_records, 'servers', 'server-to-server', 5269, client_records_by_endpoint)
+        server_records = _sort_records(server_records)
+        (rows, footnotes) = _get_records(server_records, 'servers', 'server-to-server', 5269, client_records_by_endpoint)
         ret.append(TEMPLATE_RECORDS_SERVER % dict(
             footnotes=footnotes,
             hostname=cgi.escape(hostname, True),
@@ -382,7 +382,7 @@ def get_main_body(hostname):
 
     return '\n'.join(ret)
 
-def handle_request(env, start_response):
+def _handle_request(env, start_response):
     form = cgi.FieldStorage(environ=env)
 
     if 'h' in form:
@@ -391,7 +391,7 @@ def handle_request(env, start_response):
         hostname = ''
 
     if hostname:
-        body = get_main_body(hostname)
+        body = _get_main_body(hostname)
         submit_button_disabled = ''
     else:
         body = ''
@@ -408,7 +408,7 @@ def handle_request(env, start_response):
 
 def application(env, start_response):
     try:
-        return handle_request(env, start_response)
+        return _handle_request(env, start_response)
     except:
         logging.exception('Unknown error handling request.  env=%s', env)
         raise
