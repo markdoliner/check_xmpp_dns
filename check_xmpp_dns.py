@@ -59,102 +59,102 @@ MAIN_TEMPLATE = """<!DOCTYPE html>
 
 <style type="text/css">
 .bluecontainer {
-	background-color: #d0e0f8;
-	border-radius: 10px;
-	display: inline-block;
-	padding: 0em 1em 0.5em 1em;
+    background-color: #d0e0f8;
+    border-radius: 10px;
+    display: inline-block;
+    padding: 0em 1em 0.5em 1em;
 }
 
 .footnote {
-	color: #505050;
-	font-size: 80%%;
-	padding-left: 1.5em;
-	text-indent: -1.5em;
+    color: #505050;
+    font-size: 80%%;
+    padding-left: 1.5em;
+    text-indent: -1.5em;
 }
 
 .grey {
-	color: #505050;
+    color: #505050;
 }
 
 .red {
-	color: #e00000;
+    color: #e00000;
 }
 
 .small {
-	font-size: 80%%;
+    font-size: 80%%;
 }
 
 #formcontainer {
-	background-color: #e0e0e0;
-	border-radius: 10px;
-	display: inline-block;
-	padding: 1.5em;
+    background-color: #e0e0e0;
+    border-radius: 10px;
+    display: inline-block;
+    padding: 1.5em;
 }
 
 #maincontent {
-	background-color: #eeeeee;
-	border-radius: 20px;
-	padding: 1em 2em;
+    background-color: #eeeeee;
+    border-radius: 20px;
+    padding: 1em 2em;
 }
 
 a:link {
-	text-decoration: none;
+    text-decoration: none;
 }
 
 a:hover {
-	text-decoration: underline;
+    text-decoration: underline;
 }
 
 a.hiddenlink:active, a.hiddenlink:link, a.hiddenlink:visited {
-	color: #000000;
+    color: #000000;
 }
 
 a.greyhiddenlink:active, a.greyhiddenlink:link, a.greyhiddenlink:visited {
-	color: #505050;
+    color: #505050;
 }
 
 body {
-	background-color: #333333;
-	font-family: sans-serif;
-	padding: 2em;
+    background-color: #333333;
+    font-family: sans-serif;
+    padding: 2em;
 }
 
 h3 {
-	margin-bottom: 0.5em;
+    margin-bottom: 0.5em;
 }
 
 hr {
-	background-color: #000060;
-	border: 0;
-	height: 3px;
-	margin: 2em auto 2em 0;
-	width: 40%%;
+    background-color: #000060;
+    border: 0;
+    height: 3px;
+    margin: 2em auto 2em 0;
+    width: 40%%;
 }
 
 p {
-	max-width: 40em;
-	margin-top: 0.5em;
+    max-width: 40em;
+    margin-top: 0.5em;
 }
 
 table {
-	border-collapse: collapse;
+    border-collapse: collapse;
 }
 
 td, th {
-	border: 1px dashed #c0c0c0;
-	padding: 0.2em 0.5em;
-	vertical-align: top;
+    border: 1px dashed #c0c0c0;
+    padding: 0.2em 0.5em;
+    vertical-align: top;
 }
 
 td {
-	font-family: monospace;
+    font-family: monospace;
 }
 </style>
 
 <script type="text/javascript">
 /* Form validation */
 function validate(field) {
-	document.getElementById('submit_button').disabled = (field.value.length == 0);
+    document.getElementById('submit_button').disabled = (field.value.length == 0);
 }
 
 /* Google Analytics */
@@ -162,11 +162,11 @@ var _gaq = _gaq || [];
 _gaq.push(['_setAccount', 'UA-514515-1']);
 _gaq.push(['_trackPageview']);
 (function() {
-	var ga = document.createElement('script');
-	ga.type = 'text/javascript'; ga.async = true;
-	ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-	var s = document.getElementsByTagName('script')[0];
-	s.parentNode.insertBefore(ga, s);
+    var ga = document.createElement('script');
+    ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(ga, s);
 })();
 </script>
 </head>
@@ -256,164 +256,164 @@ TEMPLATE_RECORD = """<tr>
 </tr>"""
 
 def sort_records(records):
-	return sorted(records, key=lambda record: '%10d %10d %50s %d' % (record.priority, 1000000000 - record.weight, record.target, record.port))
+    return sorted(records, key=lambda record: '%10d %10d %50s %d' % (record.priority, 1000000000 - record.weight, record.target, record.port))
 
 def get_records(records, peer_name, record_type, standard_port, conflicting_records):
-	FLAG_NON_STANDARD_PORT = 1
-	FLAG_CLIENT_SERVER_SHARED_PORT = 2
-	footnotes_for_these_records = dict()
+    FLAG_NON_STANDARD_PORT = 1
+    FLAG_CLIENT_SERVER_SHARED_PORT = 2
+    footnotes_for_these_records = dict()
 
-	# Create the list of result rows
-	rows = []
-	for record in records:
-		notes_for_this_record = []
-		if '%s:%s' % (record.target, record.port) in conflicting_records:
-			notes_for_this_record.append((FLAG_CLIENT_SERVER_SHARED_PORT, '<span class="red">ERROR</span> This host+port is listed for both client and server records'))
-		if record.port != standard_port:
-			notes_for_this_record.append((FLAG_NON_STANDARD_PORT, 'INFO Non-standard port'))
+    # Create the list of result rows
+    rows = []
+    for record in records:
+        notes_for_this_record = []
+        if '%s:%s' % (record.target, record.port) in conflicting_records:
+            notes_for_this_record.append((FLAG_CLIENT_SERVER_SHARED_PORT, '<span class="red">ERROR</span> This host+port is listed for both client and server records'))
+        if record.port != standard_port:
+            notes_for_this_record.append((FLAG_NON_STANDARD_PORT, 'INFO Non-standard port'))
 
-		note_strings_for_this_record = []
-		for (note_type, note_text) in notes_for_this_record:
-			# Determine the flag number
-			if note_type in footnotes_for_these_records:
-				footnote_number = footnotes_for_these_records[note_type]
-			else:
-				footnote_number = len(footnotes_for_these_records) + 1
-				footnotes_for_these_records[note_type] = footnote_number
+        note_strings_for_this_record = []
+        for (note_type, note_text) in notes_for_this_record:
+            # Determine the flag number
+            if note_type in footnotes_for_these_records:
+                footnote_number = footnotes_for_these_records[note_type]
+            else:
+                footnote_number = len(footnotes_for_these_records) + 1
+                footnotes_for_these_records[note_type] = footnote_number
 
-			note_strings_for_this_record.append('%s<sup>%s</sup>' % (note_text, footnote_number))
+            note_strings_for_this_record.append('%s<sup>%s</sup>' % (note_text, footnote_number))
 
-		if len(note_strings_for_this_record):
-			# The span in the following string shouldn't be necessary, but
-			# Chrome was rendering the vertical alignment weirdly without it.
-			errors = '<td><span>%s</span></td>' % '<br>'.join(note_strings_for_this_record)
-		else:
-			errors = ''
+        if len(note_strings_for_this_record):
+            # The span in the following string shouldn't be necessary, but
+            # Chrome was rendering the vertical alignment weirdly without it.
+            errors = '<td><span>%s</span></td>' % '<br>'.join(note_strings_for_this_record)
+        else:
+            errors = ''
 
-		rows.append(TEMPLATE_RECORD % dict(
-			errors=errors,
-			port=record.port,
-			priority=record.priority,
-			target=str(record.target).rstrip('.'), # Strip trailing period when displaying
-			weight=record.weight,
-		))
+        rows.append(TEMPLATE_RECORD % dict(
+            errors=errors,
+            port=record.port,
+            priority=record.priority,
+            target=str(record.target).rstrip('.'), # Strip trailing period when displaying
+            weight=record.weight,
+        ))
 
-	# Change the footnotes dictionary into a list sorted by value
-	footnotes_for_these_records = sorted(footnotes_for_these_records.items(), key=lambda x: x[1])
+    # Change the footnotes dictionary into a list sorted by value
+    footnotes_for_these_records = sorted(footnotes_for_these_records.items(), key=lambda x: x[1])
 
-	# Create the list of extended info about any problems we noticed
-	footnotes = []
-	for (flag_type, footnote_number) in footnotes_for_these_records:
-		if flag_type == FLAG_CLIENT_SERVER_SHARED_PORT:
-			footnotes.append('<p class="footnote">%s. XMPP clients and servers use different handshakes when connecting to servers, so it is not possible for a single hostname+port combination to accept traffic from clients and other servers (at least, I think that\'s true--please <a href="mailto:mark@kingant.net">correct me</a> if I\'m wrong!).</p>' % (footnote_number))
-		elif flag_type == FLAG_NON_STANDARD_PORT:
-			footnotes.append('<p class="footnote">%s. The customary port for %s connections is %s.  Using a different port isn\'t necessarily bad&mdash;%s that correctly use DNS SRV records will happily connect to this port&mdash;but we thought it was worth pointing out in case it was an accident.</p>' % (footnote_number, record_type, standard_port, peer_name))
+    # Create the list of extended info about any problems we noticed
+    footnotes = []
+    for (flag_type, footnote_number) in footnotes_for_these_records:
+        if flag_type == FLAG_CLIENT_SERVER_SHARED_PORT:
+            footnotes.append('<p class="footnote">%s. XMPP clients and servers use different handshakes when connecting to servers, so it is not possible for a single hostname+port combination to accept traffic from clients and other servers (at least, I think that\'s true--please <a href="mailto:mark@kingant.net">correct me</a> if I\'m wrong!).</p>' % (footnote_number))
+        elif flag_type == FLAG_NON_STANDARD_PORT:
+            footnotes.append('<p class="footnote">%s. The customary port for %s connections is %s.  Using a different port isn\'t necessarily bad&mdash;%s that correctly use DNS SRV records will happily connect to this port&mdash;but we thought it was worth pointing out in case it was an accident.</p>' % (footnote_number, record_type, standard_port, peer_name))
 
-	return ('\n'.join(rows), '\n'.join(footnotes))
+    return ('\n'.join(rows), '\n'.join(footnotes))
 
 def get_main_body(hostname):
-	# Record domain name
-	open('requestledger.txt', 'a').write('%s\n' % urllib.quote(hostname))
+    # Record domain name
+    open('requestledger.txt', 'a').write('%s\n' % urllib.quote(hostname))
 
-	# Set a 2.5 second timeout on the resolver
-	dns.resolver.get_default_resolver().lifetime = 2.5
+    # Set a 2.5 second timeout on the resolver
+    dns.resolver.get_default_resolver().lifetime = 2.5
 
-	# Lookup records
-	try:
-		client_records = dns.resolver.query('_xmpp-client._tcp.%s' % hostname, 'SRV')
-	except dns.exception.SyntaxError, e:
-		# TODO: Show "invalid hostname" for this
-		client_records = []
-	except dns.resolver.NXDOMAIN, e:
-		client_records = []
-	except dns.resolver.NoAnswer:
-		# TODO: Show a specific message for this
-		client_records = []
-	except dns.resolver.Timeout, e:
-		# TODO: Show a specific message for this
-		client_records = []
-	client_records_by_endpoint = set('%s:%s' % (record.target, record.port) for record in client_records)
+    # Lookup records
+    try:
+        client_records = dns.resolver.query('_xmpp-client._tcp.%s' % hostname, 'SRV')
+    except dns.exception.SyntaxError, e:
+        # TODO: Show "invalid hostname" for this
+        client_records = []
+    except dns.resolver.NXDOMAIN, e:
+        client_records = []
+    except dns.resolver.NoAnswer:
+        # TODO: Show a specific message for this
+        client_records = []
+    except dns.resolver.Timeout, e:
+        # TODO: Show a specific message for this
+        client_records = []
+    client_records_by_endpoint = set('%s:%s' % (record.target, record.port) for record in client_records)
 
-	try:
-		server_records = dns.resolver.query('_xmpp-server._tcp.%s' % hostname, 'SRV')
-	except dns.exception.SyntaxError, e:
-		# TODO: Show "invalid hostname" for this
-		server_records = []
-	except dns.resolver.NXDOMAIN, e:
-		server_records = []
-	except dns.resolver.NoAnswer:
-		# TODO: Show a specific message for this
-		# Happens for meridianoffices.com
-		server_records = []
-	except dns.resolver.Timeout, e:
-		# TODO: Show a specific message for this
-		server_records = []
-	server_records_by_endpoint = set('%s:%s' % (record.target, record.port) for record in server_records)
+    try:
+        server_records = dns.resolver.query('_xmpp-server._tcp.%s' % hostname, 'SRV')
+    except dns.exception.SyntaxError, e:
+        # TODO: Show "invalid hostname" for this
+        server_records = []
+    except dns.resolver.NXDOMAIN, e:
+        server_records = []
+    except dns.resolver.NoAnswer:
+        # TODO: Show a specific message for this
+        # Happens for meridianoffices.com
+        server_records = []
+    except dns.resolver.Timeout, e:
+        # TODO: Show a specific message for this
+        server_records = []
+    server_records_by_endpoint = set('%s:%s' % (record.target, record.port) for record in server_records)
 
-	# Construct output
-	ret = []
+    # Construct output
+    ret = []
 
-	if client_records:
-		client_records = sort_records(client_records)
-		(rows, footnotes) = get_records(client_records, 'clients', 'client-to-server', 5222, server_records_by_endpoint)
-		ret.append(TEMPLATE_RECORDS_CLIENT % dict(
-			footnotes=footnotes,
-			hostname=cgi.escape(hostname, True),
-			rows=rows,
-		))
-	else:
-		ret.append(TEMPLATE_NO_RECORDS_CLIENT % dict(
-			hostname=cgi.escape(hostname, True),
-		))
+    if client_records:
+        client_records = sort_records(client_records)
+        (rows, footnotes) = get_records(client_records, 'clients', 'client-to-server', 5222, server_records_by_endpoint)
+        ret.append(TEMPLATE_RECORDS_CLIENT % dict(
+            footnotes=footnotes,
+            hostname=cgi.escape(hostname, True),
+            rows=rows,
+        ))
+    else:
+        ret.append(TEMPLATE_NO_RECORDS_CLIENT % dict(
+            hostname=cgi.escape(hostname, True),
+        ))
 
-	ret.append('')
+    ret.append('')
 
-	if server_records:
-		server_records = sort_records(server_records)
-		(rows, footnotes) = get_records(server_records, 'servers', 'server-to-server', 5269, client_records_by_endpoint)
-		ret.append(TEMPLATE_RECORDS_SERVER % dict(
-			footnotes=footnotes,
-			hostname=cgi.escape(hostname, True),
-			rows=rows,
-		))
-	else:
-		ret.append(TEMPLATE_NO_RECORDS_SERVER % dict(
-			hostname=cgi.escape(hostname, True),
-		))
+    if server_records:
+        server_records = sort_records(server_records)
+        (rows, footnotes) = get_records(server_records, 'servers', 'server-to-server', 5269, client_records_by_endpoint)
+        ret.append(TEMPLATE_RECORDS_SERVER % dict(
+            footnotes=footnotes,
+            hostname=cgi.escape(hostname, True),
+            rows=rows,
+        ))
+    else:
+        ret.append(TEMPLATE_NO_RECORDS_SERVER % dict(
+            hostname=cgi.escape(hostname, True),
+        ))
 
-	return '\n'.join(ret)
+    return '\n'.join(ret)
 
 def handle_request(env, start_response):
-	form = cgi.FieldStorage(environ=env)
+    form = cgi.FieldStorage(environ=env)
 
-	if 'h' in form:
-		hostname = form['h'].value.strip()
-	else:
-		hostname = ''
+    if 'h' in form:
+        hostname = form['h'].value.strip()
+    else:
+        hostname = ''
 
-	if hostname:
-		body = get_main_body(hostname)
-		submit_button_disabled = ''
-	else:
-		body = ''
-		submit_button_disabled = 'disabled="disabled"'
+    if hostname:
+        body = get_main_body(hostname)
+        submit_button_disabled = ''
+    else:
+        body = ''
+        submit_button_disabled = 'disabled="disabled"'
 
-	response_body = MAIN_TEMPLATE % dict(
-		hostname=cgi.escape(hostname, True),
-		body=body,
-		submit_button_disabled=submit_button_disabled,
-	)
+    response_body = MAIN_TEMPLATE % dict(
+        hostname=cgi.escape(hostname, True),
+        body=body,
+        submit_button_disabled=submit_button_disabled,
+    )
 
-	start_response('200 OK', [('Content-Type', 'text/html')])
-	return [response_body]
+    start_response('200 OK', [('Content-Type', 'text/html')])
+    return [response_body]
 
 def application(env, start_response):
-	try:
-		return handle_request(env, start_response)
-	except:
-		logging.exception('Unknown error handling request.  env=%s', env)
-		raise
+    try:
+        return handle_request(env, start_response)
+    except:
+        logging.exception('Unknown error handling request.  env=%s', env)
+        raise
 
 if __name__ == '__main__':
-	logging.basicConfig(filename='log')
-	gevent.wsgi.WSGIServer(('', 1000), application=application, spawn=None).serve_forever()
+    logging.basicConfig(filename='log')
+    gevent.wsgi.WSGIServer(('', 1000), application=application, spawn=None).serve_forever()
