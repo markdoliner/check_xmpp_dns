@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (c) 2011-2013, Mark Doliner
+# Copyright (c) 2011-2014, Mark Doliner
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -214,9 +214,10 @@ Created by <a href="https://kingant.net/">Mark Doliner</a><br>
 </p>
 
 <p><b>Other Resources</b><br>
-<a href="http://www.olark.com/gtalk/check_srv">Olark's DNS SRV help page</a><br>
-<a href="https://support.google.com/a/answer/34143">Google's official help page for configuring server records</a><br>
-<a href="http://www.process-one.net/en/imtrends/">IMtrends</a> queries for information about a given XMPP server
+<a href="https://xmpp.net/">IM Observatory</a> (general info)<br>
+<a href="http://www.process-one.net/en/imtrends/">IMtrends</a> (general info)<br>
+<a href="http://www.olark.com/gtalk/check_srv">Olark's DNS SRV help page</a> (DNS SRV specific)<br>
+<a href="https://support.google.com/a/answer/34143">Google's official help page for configuring server records</a> (DNS SRV specific)
 </p>
 
 
