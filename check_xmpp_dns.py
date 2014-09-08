@@ -193,7 +193,7 @@ ex: <a class="greyhiddenlink" href="?h=kingant.net">kingant.net</a>
 
 <hr>
 <h2>About</h2>
-<p>The XMPP Core RFC describes a method of <a href="http://xmpp.org/rfcs/rfc6120.html#tcp-resolution-prefer">using DNS SRV records</a> to determine the host and port to connect to when logging into an XMPP account.  It can sometimes be tricky to configure these records.  Use this page as a tool to verify that your DNS SRV records are correct.</p>
+<p>The XMPP Core RFC describes a method of <a href="https://xmpp.org/rfcs/rfc6120.html#tcp-resolution-prefer">using DNS SRV records</a> to determine the host and port to connect to when logging into an XMPP account.  It can sometimes be tricky to configure these records.  Use this page as a tool to verify that your DNS SRV records are correct.</p>
 
 <p>You can also fetch these records yourself with any of the following commands.<br>
 <span class="small grey">Linux, OS X&gt;</span> <code>host -t SRV _xmpp-client._tcp.example.com</code><br>
@@ -212,7 +212,7 @@ Created by <a href="https://kingant.net/">Mark Doliner</a><br>
 <p><b>Other Resources</b><br>
 <a href="https://xmpp.net/">IM Observatory</a> (general info)<br>
 <a href="http://www.process-one.net/en/imtrends/">IMtrends</a> (general info)<br>
-<a href="http://www.olark.com/gtalk/check_srv">Olark's DNS SRV help page</a> (DNS SRV specific)<br>
+<a href="https://www.olark.com/gtalk/check_srv">Olark's DNS SRV help page</a> (DNS SRV specific)<br>
 <a href="https://support.google.com/a/answer/34143">Google's official help page for configuring server records</a> (DNS SRV specific)
 </p>
 
