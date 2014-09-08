@@ -412,4 +412,4 @@ def application(env, start_response):
 
 if __name__ == '__main__':
     logging.basicConfig(filename='log')
-    gevent.wsgi.WSGIServer(('', 1000), application=application, spawn=None).serve_forever()
+    gevent.wsgi.WSGIServer(('', 1000), application=application).serve_forever()
