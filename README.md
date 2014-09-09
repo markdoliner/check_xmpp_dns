@@ -23,4 +23,4 @@ the gevent WSGI server. My web server is configured to route traffic for
 /check_xmpp_dns/ to this port.
 
 But you don't have to run it this way. You can use any server with WSGI
-support to start the scripts 'application' method.
+support to start the script's 'application' method.
