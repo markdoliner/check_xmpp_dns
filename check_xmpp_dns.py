@@ -37,6 +37,7 @@
 # TODO: Add JavaScript to strip leading and trailing whitespace in the
 #       hostname before submitting the form, so that the hostname is pretty in
 #       the URL.
+# TODO: Remove the "As of 2014-09-09" note. Maybe after 2014.
 
 #import gevent.monkey; gevent.monkey.patch_all()
 
