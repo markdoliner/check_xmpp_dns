@@ -339,7 +339,6 @@ def _get_main_body(hostname):
         server_records = []
     except dns.resolver.NoAnswer:
         # TODO: Show a specific message for this
-        # Happens for meridianoffices.com
         server_records = []
     except dns.resolver.Timeout:
         # TODO: Show a specific message for this
