@@ -225,6 +225,8 @@ Created by <a href="https://kingant.net/">Mark Doliner</a><br>
 </body>
 </html>"""
 
+TEMPLATE_ERROR = """<div style="margin: 1em 0em;" class="red">%s</div>"""
+
 # These templates are used when there are no records for the given domain
 TEMPLATE_NO_RECORDS = """<div style="margin: 1em 0em;"><div class="bluecontainer">
 <h3>%s records for %%(hostname)s</h3>
@@ -360,6 +362,10 @@ def _get_authoritative_name_servers_for_domain(domain):
 def _get_main_body(hostname):
     # Record domain name
     open('requestledger.txt', 'a').write('%s\n' % urllib.quote(hostname))
+
+    # Sanity check hostname
+    if hostname.find('..') != -1:
+        return TEMPLATE_ERROR % 'Invalid hostname'
 
     # Create a DNS resolver to use for this request
     dns_resolver = dns.resolver.Resolver()
