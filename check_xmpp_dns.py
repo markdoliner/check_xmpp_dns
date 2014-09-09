@@ -336,9 +336,30 @@ def _get_authoritative_name_servers_for_domain(domain):
         broader_domain = '.'.join(pieces[i-1:])
         try:
             answer = dns_resolver.query(broader_domain, dns.rdatatype.NS)
-        except dns.resolver.NXDOMAIN:
-            # TODO: Log something
+        except dns.exception.SyntaxError:
+            # TODO: Show "invalid hostname" for this?
             return
+        except dns.resolver.NXDOMAIN:
+            # TODO: Show an error message about this. "Unable to determine
+            # authoritative name servers for domain X. These results might be
+            # stale, up to the lifetime of the TTL."
+            return
+        except dns.resolver.NoAnswer:
+            # TODO: Show an error message about this. "Unable to determine
+            # authoritative name servers for domain X. These results might be
+            # stale, up to the lifetime of the TTL."
+            return
+        except dns.resolver.NoNameservers:
+            # TODO: Show an error message about this. "Unable to determine
+            # authoritative name servers for domain X. These results might be
+            # stale, up to the lifetime of the TTL."
+            return
+        except dns.resolver.Timeout:
+            # TODO: Show an error message about this. "Unable to determine
+            # authoritative name servers for domain X. These results might be
+            # stale, up to the lifetime of the TTL."
+            return
+
         new_nameservers = []
         for record in answer:
             if record.rdtype == dns.rdatatype.NS:
