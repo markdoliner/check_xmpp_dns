@@ -173,6 +173,8 @@ ga('send', 'pageview');
 
 <h1><a class="hiddenlink" href=".">Check DNS SRV records for XMPP</a></h1>
 
+<p><i>Note: As of 2014-09-09 this page now attempts to query the authoritative name servers for the given domain directly instead of using this script's local name server. This hopefully bypasses any record caching and makes testing easier.</i></p>
+
 <div id="formcontainer">
 <form action="?" method="GET">
 <input id="input_box" name="h" onInput="validate(this)" value="%(hostname)s">
@@ -307,6 +309,53 @@ def _get_records(records, peer_name, record_type, standard_port, conflicting_rec
 
     return ('\n'.join(rows), '\n'.join(footnotes))
 
+def _get_authoritative_name_servers_for_domain(domain):
+    """Return a list of strings containing IP addresses of the name servers
+    that are considered to be authoritative for the given domain.
+
+    This iteratively queries the name server responsible for each piece of the
+    FQDN directly, so as to avoid any caching of results."""
+
+    # Create a DNS resolver to use for these requests
+    dns_resolver = dns.resolver.Resolver()
+
+    # Set a 2.5 second timeout on the resolver
+    dns_resolver.lifetime = 2.5
+
+    # Iterate through the pieces of the hostname from broad to narrow. For
+    # each piece, ask which name servers are authoritative for the next
+    # narrower piece. Note that we don't bother doing this for the broadest
+    # piece of the hostname (e.g. 'com' or 'net') because the list of root
+    # servers should rarely change and changes shouldn't affect the outcome
+    # of these queries.
+    pieces = domain.split('.')
+    for i in xrange(len(pieces)-1, 0, -1):
+        broader_domain = '.'.join(pieces[i-1:])
+        answer = dns_resolver.query(broader_domain, dns.rdatatype.NS)
+        new_nameservers = []
+        for record in answer:
+            if record.rdtype == dns.rdatatype.NS:
+                # Got the hostname of a nameserver. Resolve it to an IP.
+                # TODO: Don't do this if the nameserver we just queried gave us
+                # an additional record that includes the IP.
+                answer2 = dns_resolver.query(record.to_text())
+                for record2 in answer2:
+                    if record2.rdtype in (dns.rdatatype.A, dns.rdatatype.AAAA):
+                        # Add the IP to the list of IPs.
+                        new_nameservers.append(record2.address)
+                    else:
+                        # Unexpected record type
+                        # TODO: Log something?
+                        pass
+            else:
+                # Unexpected record type
+                # TODO: Log something?
+                pass
+
+        dns_resolver.nameservers = new_nameservers
+
+    return dns_resolver.nameservers
+
 def _get_main_body(hostname):
     # Record domain name
     open('requestledger.txt', 'a').write('%s\n' % urllib.quote(hostname))
@@ -316,6 +365,11 @@ def _get_main_body(hostname):
 
     # Set a 2.5 second timeout on the resolver
     dns_resolver.lifetime = 2.5
+
+    # Look up the list of authoritative name servers for this domain and query
+    # them directly when looking up XMPP SRV records. We do this to avoid any
+    # potential caching from intermediate name servers.
+    dns_resolver.nameservers = _get_authoritative_name_servers_for_domain(hostname)
 
     # Lookup records
     try:
