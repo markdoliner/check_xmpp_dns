@@ -334,7 +334,11 @@ def _get_authoritative_name_servers_for_domain(domain):
     pieces = domain.split('.')
     for i in xrange(len(pieces)-1, 0, -1):
         broader_domain = '.'.join(pieces[i-1:])
-        answer = dns_resolver.query(broader_domain, dns.rdatatype.NS)
+        try:
+            answer = dns_resolver.query(broader_domain, dns.rdatatype.NS)
+        except dns.resolver.NXDOMAIN:
+            # TODO: Log something
+            return
         new_nameservers = []
         for record in answer:
             if record.rdtype == dns.rdatatype.NS:
@@ -376,7 +380,13 @@ def _get_main_body(hostname):
     # Look up the list of authoritative name servers for this domain and query
     # them directly when looking up XMPP SRV records. We do this to avoid any
     # potential caching from intermediate name servers.
-    dns_resolver.nameservers = _get_authoritative_name_servers_for_domain(hostname)
+    new_nameservers = _get_authoritative_name_servers_for_domain(hostname)
+    if new_nameservers:
+        dns_resolver.nameservers = new_nameservers
+    else:
+        # Couldn't determine authoritative name servers for domain.
+        # TODO: Log something? Show message to user?
+        pass
 
     # Lookup records
     try:
