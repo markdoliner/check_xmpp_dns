@@ -316,7 +316,7 @@ def _get_main_body(hostname):
 
     # Lookup records
     try:
-        client_records = dns.resolver.query('_xmpp-client._tcp.%s' % hostname, 'SRV')
+        client_records = dns_resolver.query('_xmpp-client._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
     except dns.exception.SyntaxError:
         # TODO: Show "invalid hostname" for this
         client_records = []
@@ -331,7 +331,7 @@ def _get_main_body(hostname):
     client_records_by_endpoint = set('%s:%s' % (record.target, record.port) for record in client_records)
 
     try:
-        server_records = dns.resolver.query('_xmpp-server._tcp.%s' % hostname, 'SRV')
+        server_records = dns_resolver.query('_xmpp-server._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
     except dns.exception.SyntaxError:
         # TODO: Show "invalid hostname" for this
         server_records = []
