@@ -325,6 +325,9 @@ def _get_main_body(hostname):
     except dns.resolver.NoAnswer:
         # TODO: Show a specific message for this
         client_records = []
+    except dns.resolver.NoNameservers:
+        # TODO: Show a specific message for this
+        client_records = []
     except dns.resolver.Timeout:
         # TODO: Show a specific message for this
         client_records = []
@@ -338,6 +341,9 @@ def _get_main_body(hostname):
     except dns.resolver.NXDOMAIN:
         server_records = []
     except dns.resolver.NoAnswer:
+        # TODO: Show a specific message for this
+        server_records = []
+    except dns.resolver.NoNameservers:
         # TODO: Show a specific message for this
         server_records = []
     except dns.resolver.Timeout:
