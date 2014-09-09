@@ -311,12 +311,15 @@ def _get_main_body(hostname):
     # Record domain name
     open('requestledger.txt', 'a').write('%s\n' % urllib.quote(hostname))
 
+    # Create a DNS resolver to use for this request
+    dns_resolver = dns.resolver.Resolver()
+
     # Set a 2.5 second timeout on the resolver
-    dns.resolver.get_default_resolver().lifetime = 2.5
+    dns_resolver.lifetime = 2.5
 
     # Lookup records
     try:
-        client_records = dns.resolver.query('_xmpp-client._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
+        client_records = dns_resolver.query('_xmpp-client._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
     except dns.exception.SyntaxError:
         # TODO: Show "invalid hostname" for this
         client_records = []
@@ -334,7 +337,7 @@ def _get_main_body(hostname):
     client_records_by_endpoint = set('%s:%s' % (record.target, record.port) for record in client_records)
 
     try:
-        server_records = dns.resolver.query('_xmpp-server._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
+        server_records = dns_resolver.query('_xmpp-server._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
     except dns.exception.SyntaxError:
         # TODO: Show "invalid hostname" for this
         server_records = []
