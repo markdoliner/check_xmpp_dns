@@ -466,6 +466,7 @@ def _handle_request(env, start_response):
     return [response_body]
 
 def application(env, start_response):
+    """WSGI application entry point."""
     try:
         return _handle_request(env, start_response)
     except:
