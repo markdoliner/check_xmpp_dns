@@ -366,7 +366,31 @@ def _get_authoritative_name_servers_for_domain(domain):
                 # Got the hostname of a nameserver. Resolve it to an IP.
                 # TODO: Don't do this if the nameserver we just queried gave us
                 # an additional record that includes the IP.
-                answer2 = dns_resolver.query(record.to_text())
+                try:
+                    answer2 = dns_resolver.query(record.to_text())
+                except dns.exception.SyntaxError:
+                    # TODO: Show "invalid hostname" for this?
+                    return
+                except dns.resolver.NXDOMAIN:
+                    # TODO: Show an error message about this. "Unable to determine
+                    # authoritative name servers for domain X. These results might be
+                    # stale, up to the lifetime of the TTL."
+                    return
+                except dns.resolver.NoAnswer:
+                    # TODO: Show an error message about this. "Unable to determine
+                    # authoritative name servers for domain X. These results might be
+                    # stale, up to the lifetime of the TTL."
+                    return
+                except dns.resolver.NoNameservers:
+                    # TODO: Show an error message about this. "Unable to determine
+                    # authoritative name servers for domain X. These results might be
+                    # stale, up to the lifetime of the TTL."
+                    return
+                except dns.resolver.Timeout:
+                    # TODO: Show an error message about this. "Unable to determine
+                    # authoritative name servers for domain X. These results might be
+                    # stale, up to the lifetime of the TTL."
+                    return
                 for record2 in answer2:
                     if record2.rdtype in (dns.rdatatype.A, dns.rdatatype.AAAA):
                         # Add the IP to the list of IPs.
