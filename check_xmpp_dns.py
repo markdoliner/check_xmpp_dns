@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+# Licensed as follows (this is the 2-clause BSD license, aka
+# "Simplified BSD License" or "FreeBSD License"):
+#
 # Copyright (c) 2011-2014, Mark Doliner
 # All rights reserved.
 #
@@ -317,7 +320,8 @@ def _get_authoritative_name_servers_for_domain(domain):
     that are considered to be authoritative for the given domain.
 
     This iteratively queries the name server responsible for each piece of the
-    FQDN directly, so as to avoid any caching of results."""
+    FQDN directly, so as to avoid any caching of results.
+    """
 
     # Create a DNS resolver to use for these requests
     dns_resolver = dns.resolver.Resolver()
