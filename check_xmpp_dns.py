@@ -533,6 +533,8 @@ def _handle_request(env, start_response):
 
 def application(env, start_response):
     """WSGI application entry point."""
+    logging.basicConfig(filename='log')
+
     try:
         return _handle_request(env, start_response)
     except:
@@ -540,5 +542,4 @@ def application(env, start_response):
         raise
 
 if __name__ == '__main__':
-    logging.basicConfig(filename='log')
     gevent.wsgi.WSGIServer(('', 1000), application=application).serve_forever()
