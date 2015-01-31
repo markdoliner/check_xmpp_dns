@@ -13,13 +13,16 @@ Dependencies
   * Ubuntu: apt-get install python-dnspython
 * (optional) python gevent library. Only needed if you execute the
   script directly to run a standalone web server.
+* (optional) gunicorn. Only needed if you want to use the included
+  check-xmpp-dns.conf upstart config to runt he script as a system service.
 
 
 Usage
 =====
 This script's main method starts a standard HTTP server on port 1000 using
-the gevent WSGI server. My web server is configured to route traffic for
-/check_xmpp_dns/ to this port.
+the gevent WSGI server. You may wish to proxy traffic to this port from
+another web server. You can use the included check-xmpp-dns.conf upstart
+config file to run the script as a system service.
 
-But you don't have to run it this way. You can use any server with WSGI
-support to start the script's 'application' method.
+Or you can use any other WSGI server to start the script's 'application'
+method.
