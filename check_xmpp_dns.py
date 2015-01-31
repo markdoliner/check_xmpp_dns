@@ -40,7 +40,6 @@
 # TODO: Add JavaScript to strip leading and trailing whitespace in the
 #       hostname before submitting the form, so that the hostname is pretty in
 #       the URL.
-# TODO: Remove the "As of 2014-09-09" note. Maybe after 2014.
 
 #import gevent.monkey; gevent.monkey.patch_all()
 
@@ -175,8 +174,6 @@ ga('send', 'pageview');
 
 
 <h1><a class="hiddenlink" href=".">Check DNS SRV records for XMPP</a></h1>
-
-<p><i>Note: As of 2014-09-09 this page now attempts to query the authoritative name servers for the given domain directly instead of using this script's local name server. This hopefully bypasses any record caching and makes testing easier.</i></p>
 
 <div id="formcontainer">
 <form action="?" method="GET">
