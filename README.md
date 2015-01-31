@@ -1,18 +1,18 @@
 Overview
 ========
-This is a python cgi script that prints the DNS SRV records used for
-XMPP. You can see it running at https://kingant.net/check_xmpp_dns/
+This is a python WSGI application that prints the DNS SRV records used
+for XMPP. You can see it running at https://kingant.net/check_xmpp_dns/
 
 Available at https://github.com/markdoliner/check_xmpp_dns
 
 
-Requirements
+Dependencies
 ============
 * python dns library.
   * Homepage: http://www.dnspython.org/
   * Ubuntu: apt-get install python-dnspython
-* python gevent library for the web server, but you can rip this out
-  if you want to run it some other way.
+* (optional) python gevent library. Only needed if you execute the
+  script directly to run a standalone web server.
 
 
 Usage

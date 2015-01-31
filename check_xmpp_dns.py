@@ -48,7 +48,6 @@ import cgi
 #import cgitb; cgitb.enable()
 import dns.exception
 import dns.resolver
-import gevent.wsgi
 import logging
 import urllib
 
@@ -542,4 +541,5 @@ def application(env, start_response):
         raise
 
 if __name__ == '__main__':
+    import gevent.wsgi
     gevent.wsgi.WSGIServer(('', 1000), application=application).serve_forever()
