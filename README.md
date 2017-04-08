@@ -13,6 +13,8 @@ Dependencies
   * Ubuntu: apt-get install python-dnspython
 * (optional) python gevent library. Only needed if you execute the
   script directly to run a standalone web server.
+  * Homepage: http://www.gevent.org/
+  * Ubuntu: apt-get install python-gevent
 * (optional) gunicorn. Only needed if you want to use the included
   check-xmpp-dns.conf upstart config to run the script as a system service.
 
