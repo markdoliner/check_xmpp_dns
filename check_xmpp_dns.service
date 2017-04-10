@@ -1,0 +1,18 @@
+[Unit]
+Description=Python WSGI check_xmpp_dns
+After=syslog.target network.target
+
+[Service]
+User=check-xmpp-dns
+Group=check-xmpp-dns
+RuntimeDirectory=gunicorn
+WorkingDirectory=/srv/check_xmpp_dns
+PIDFile=/var/run/gunicorn/check_xmpp_dns.pid
+ExecStart=/usr/bin/gunicorn check_xmpp_dns:application --log-file=log --bind unix:/tmp/check_xmpp_dns.socket --workers=5 --pid=/var/run/gunicorn/check_xmpp_dns.pid
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target
+
