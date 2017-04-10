@@ -18,9 +18,9 @@ Dependencies
 * (optional) gunicorn. Only needed if you want to use the included upstart or systemd service
   * install: apt-get install gunicorn
   * upstart: check-xmpp-dns.conf upstart config to run the script as a system service.
-  * systemd: (be sure paths, user and permissions are set properly). 
-  copy check_xmpp_dns.service to /etc/systemd/system/check_xmpp_dns.service
-  copy tmpfiles.d_gunicorn.conf to /etc/tmpfiles.d/gunicorn.conf 
+  * systemd: (be sure paths, user and permissions are set properly). \
+    Copy `check_xmpp_dns.service` to `/etc/systemd/system/check_xmpp_dns.service`
+    and copy `tmpfiles.d_gunicorn.conf` to `/etc/tmpfiles.d/gunicorn.conf`
 
 Usage
 =====
