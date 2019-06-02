@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Licensed as follows (this is the 2-clause BSD license, aka
 # "Simplified BSD License" or "FreeBSD License"):
