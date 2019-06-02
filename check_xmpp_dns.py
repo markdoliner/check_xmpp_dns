@@ -526,7 +526,7 @@ def _handle_request(env, start_response):
     )
 
     start_response('200 OK', [('Content-Type', 'text/html')])
-    return [response_body]
+    return [response_body.encode('utf-8')]
 
 def application(env, start_response):
     """WSGI application entry point."""
