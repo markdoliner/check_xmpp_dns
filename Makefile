@@ -1,5 +1,9 @@
 .DEFAULT_GOAL:=check
 
+.PHONY: install-deps
+install-deps:
+	pip install --requirement requirements.txt
+
 .PHONY: sort-imports
 sort-imports:
 	isort check_xmpp_dns.py
