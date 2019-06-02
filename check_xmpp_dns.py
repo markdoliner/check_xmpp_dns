@@ -45,7 +45,7 @@
 
 import cgi
 import logging
-import urllib
+import urllib.parse
 
 #import cgitb; cgitb.enable()
 import dns.exception
@@ -284,7 +284,7 @@ def _get_records(records, peer_name, record_type, standard_port, conflicting_rec
 
             note_strings_for_this_record.append('%s<sup>%s</sup>' % (note_text, footnote_number))
 
-        if len(note_strings_for_this_record):
+        if note_strings_for_this_record:
             # The span in the following string shouldn't be necessary, but
             # Chrome was rendering the vertical alignment weirdly without it.
             errors = '<td><span>%s</span></td>' % '<br>'.join(note_strings_for_this_record)
@@ -333,33 +333,33 @@ def _get_authoritative_name_servers_for_domain(domain):
     # servers should rarely change and changes shouldn't affect the outcome
     # of these queries.
     pieces = domain.split('.')
-    for i in xrange(len(pieces)-1, 0, -1):
+    for i in range(len(pieces)-1, 0, -1):
         broader_domain = '.'.join(pieces[i-1:])
         try:
             answer = dns_resolver.query(broader_domain, dns.rdatatype.NS)
         except dns.exception.SyntaxError:
             # TODO: Show "invalid hostname" for this?
-            return
+            return None
         except dns.resolver.NXDOMAIN:
             # TODO: Show an error message about this. "Unable to determine
             # authoritative name servers for domain X. These results might be
             # stale, up to the lifetime of the TTL."
-            return
+            return None
         except dns.resolver.NoAnswer:
             # TODO: Show an error message about this. "Unable to determine
             # authoritative name servers for domain X. These results might be
             # stale, up to the lifetime of the TTL."
-            return
+            return None
         except dns.resolver.NoNameservers:
             # TODO: Show an error message about this. "Unable to determine
             # authoritative name servers for domain X. These results might be
             # stale, up to the lifetime of the TTL."
-            return
+            return None
         except dns.resolver.Timeout:
             # TODO: Show an error message about this. "Unable to determine
             # authoritative name servers for domain X. These results might be
             # stale, up to the lifetime of the TTL."
-            return
+            return None
 
         new_nameservers = []
         for record in answer:
@@ -371,27 +371,27 @@ def _get_authoritative_name_servers_for_domain(domain):
                     answer2 = dns_resolver.query(record.to_text())
                 except dns.exception.SyntaxError:
                     # TODO: Show "invalid hostname" for this?
-                    return
+                    return None
                 except dns.resolver.NXDOMAIN:
                     # TODO: Show an error message about this. "Unable to determine
                     # authoritative name servers for domain X. These results might be
                     # stale, up to the lifetime of the TTL."
-                    return
+                    return None
                 except dns.resolver.NoAnswer:
                     # TODO: Show an error message about this. "Unable to determine
                     # authoritative name servers for domain X. These results might be
                     # stale, up to the lifetime of the TTL."
-                    return
+                    return None
                 except dns.resolver.NoNameservers:
                     # TODO: Show an error message about this. "Unable to determine
                     # authoritative name servers for domain X. These results might be
                     # stale, up to the lifetime of the TTL."
-                    return
+                    return None
                 except dns.resolver.Timeout:
                     # TODO: Show an error message about this. "Unable to determine
                     # authoritative name servers for domain X. These results might be
                     # stale, up to the lifetime of the TTL."
-                    return
+                    return None
                 for record2 in answer2:
                     if record2.rdtype in (dns.rdatatype.A, dns.rdatatype.AAAA):
                         # Add the IP to the list of IPs.
@@ -411,7 +411,7 @@ def _get_authoritative_name_servers_for_domain(domain):
 
 def _get_main_body(hostname):
     # Record domain name
-    open('requestledger.txt', 'a').write('%s\n' % urllib.quote(hostname))
+    open('requestledger.txt', 'a').write('%s\n' % urllib.parse.quote(hostname))
 
     # Sanity check hostname
     if hostname.find('..') != -1:
@@ -540,5 +540,5 @@ def application(env, start_response):
 if __name__ == '__main__':
     logging.basicConfig(filename='log')
 
-    import gevent.wsgi
-    gevent.wsgi.WSGIServer(('', 1000), application=application).serve_forever()
+    import gevent.pywsgi
+    gevent.pywsgi.WSGIServer(('', 1000), application=application).serve_forever()
