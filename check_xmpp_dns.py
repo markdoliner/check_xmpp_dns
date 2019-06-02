@@ -44,11 +44,12 @@
 #import gevent.monkey; gevent.monkey.patch_all()
 
 import cgi
+import logging
+import urllib
+
 #import cgitb; cgitb.enable()
 import dns.exception
 import dns.resolver
-import logging
-import urllib
 
 # This is the main HTML template that makes up the page
 MAIN_TEMPLATE = """<!DOCTYPE html>
