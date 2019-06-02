@@ -3,4 +3,5 @@
 
 # Specific files.
 /log
+/requestledger.txt
 /venv/
