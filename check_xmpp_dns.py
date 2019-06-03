@@ -3,7 +3,7 @@
 # Licensed as follows (this is the 2-clause BSD license, aka
 # "Simplified BSD License" or "FreeBSD License"):
 #
-# Copyright (c) 2011-2014, Mark Doliner
+# Copyright (c) 2011-2014,2019, Mark Doliner
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,7 @@
 
 # TODO: Maybe print a friendly warning if a DNS server returns a CNAME record
 #       when we query for DNS SRV?  It's possible this is legit, and we should
-#       recursively query the CNAME record for DNS SRV.  But surely not all
+#       recursively query the CNAME record for DNS SRV. But surely not all
 #       XMPP clients will do that.
 # TODO: Add mild info/warning if client and server records point to different
 #       hosts?  Or resolve to different hosts?  (aegee.org)
@@ -44,273 +44,63 @@
 #import gevent.monkey; gevent.monkey.patch_all()
 
 import cgi
+import collections
+import enum
 import logging
 import urllib.parse
 
 #import cgitb; cgitb.enable()
 import dns.exception
 import dns.resolver
-
-# This is the main HTML template that makes up the page
-MAIN_TEMPLATE = """<!DOCTYPE html>
-
-<html>
-<head>
-<meta charset="utf-8">
-<title>Check DNS SRV records for XMPP</title>
-
-<style type="text/css">
-.bluecontainer {
-    background-color: #d0e0f8;
-    border-radius: 10px;
-    display: inline-block;
-    padding: 0em 1em 0.5em 1em;
-}
-
-.footnote {
-    color: #505050;
-    font-size: 80%%;
-    padding-left: 1.5em;
-    text-indent: -1.5em;
-}
-
-.grey {
-    color: #505050;
-}
-
-.red {
-    color: #e00000;
-}
-
-.small {
-    font-size: 80%%;
-}
-
-#formcontainer {
-    background-color: #e0e0e0;
-    border-radius: 10px;
-    display: inline-block;
-    padding: 1.5em;
-}
-
-#maincontent {
-    background-color: #eeeeee;
-    border-radius: 20px;
-    padding: 1em 2em;
-}
-
-a:link {
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
-a.hiddenlink:active, a.hiddenlink:link, a.hiddenlink:visited {
-    color: #000000;
-}
-
-a.greyhiddenlink:active, a.greyhiddenlink:link, a.greyhiddenlink:visited {
-    color: #505050;
-}
-
-body {
-    background-color: #333333;
-    font-family: sans-serif;
-    padding: 2em;
-}
-
-h3 {
-    margin-bottom: 0.5em;
-}
-
-hr {
-    background-color: #000060;
-    border: 0;
-    height: 3px;
-    margin: 2em auto 2em 0;
-    width: 40%%;
-}
-
-p {
-    max-width: 40em;
-    margin-top: 0.5em;
-}
-
-table {
-    border-collapse: collapse;
-}
-
-td, th {
-    border: 1px dashed #c0c0c0;
-    padding: 0.2em 0.5em;
-    vertical-align: top;
-}
-
-td {
-    font-family: monospace;
-}
-</style>
-
-<script type="text/javascript">
-/* Form validation */
-function validate(field) {
-    document.getElementById('submit_button').disabled = (field.value.length == 0);
-}
-
-/* Google Analytics */
-(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-ga('create', 'UA-514515-1', 'kingant.net');
-ga('send', 'pageview');
-</script>
-</head>
-
-<body>
-<div id="maincontent">
+import jinja2
 
 
-
-<h1><a class="hiddenlink" href=".">Check DNS SRV records for XMPP</a></h1>
-
-<div id="formcontainer">
-<form action="?" method="GET">
-<input id="input_box" name="h" onInput="validate(this)" value="%(hostname)s">
-<input %(submit_button_disabled)sid="submit_button" type="submit" value="Check">
-</form>
-<div class="small grey" style="margin-left: 1em;">
-ex: <a class="greyhiddenlink" href="?h=jabber.org">jabber.org</a><br>
-ex: <a class="greyhiddenlink" href="?h=gmail.com">gmail.com</a><br>
-ex: <a class="greyhiddenlink" href="?h=kingant.net">kingant.net</a>
-</div>
-</div>
+@enum.unique
+class NoteType(enum.Enum):
+    NON_STANDARD_PORT = enum.auto()
+    CLIENT_SERVER_SHARED_PORT = enum.auto()
 
 
+RecordTuple = collections.namedtuple('RecordTuple', [
+    'port',
+    'priority',
+    'target',
+    'weight',
+    'note_types_and_footnote_numbers',  # a 2-item tuple
+])
 
-%(body)s
-
-
-
-<hr>
-<h2>About</h2>
-<p>The XMPP Core RFC describes a method of <a href="https://xmpp.org/rfcs/rfc6120.html#tcp-resolution-prefer">using DNS SRV records</a> to determine the host and port to connect to when logging into an XMPP account.  It can sometimes be tricky to configure these records.  Use this page as a tool to verify that your DNS SRV records are correct.</p>
-
-<p>You can also fetch these records yourself with any of the following commands.<br>
-<span class="small grey">Linux, OS X&gt;</span> <code>host -t SRV _xmpp-client._tcp.example.com</code><br>
-<span class="small grey">Linux, OS X&gt;</span> <code>host -t SRV _xmpp-server._tcp.example.com</code><br>
-<span class="small grey">Linux, OS X&gt;</span> <code>dig _xmpp-client._tcp.example.com SRV</code><br>
-<span class="small grey">Linux, OS X&gt;</span> <code>dig _xmpp-server._tcp.example.com SRV</code><br>
-<span class="small grey">Linux, OS X, Windows&gt;</span> <code>nslookup -querytype=SRV _xmpp-client._tcp.example.com</code><br>
-<span class="small grey">Linux, OS X, Windows&gt;</span> <code>nslookup -querytype=SRV _xmpp-server._tcp.example.com</code>
-</p>
-
-<p><b>This Page</b><br>
-Created by <a href="https://kingant.net/">Mark Doliner</a><br>
-<a href="https://github.com/markdoliner/check_xmpp_dns">Source available</a> on GitHub
-</p>
-
-<p><b>Other Resources</b><br>
-<a href="https://xmpp.net/">IM Observatory</a> (general info)<br>
-<a href="http://www.process-one.net/en/imtrends/">IMtrends</a> (general info)<br>
-<a href="https://www.olark.com/gtalk/check_srv">Olark's DNS SRV help page</a> (DNS SRV specific)<br>
-<a href="https://support.google.com/a/answer/34143">Google's official help page for configuring server records</a> (DNS SRV specific)
-</p>
-
-
-
-</div>
-</body>
-</html>"""
-
-TEMPLATE_ERROR = """<div style="margin: 1em 0em;" class="red">%s</div>"""
-
-# These templates are used when there are no records for the given domain
-TEMPLATE_NO_RECORDS = """<div style="margin: 1em 0em;"><div class="bluecontainer">
-<h3>%s records for %%(hostname)s</h3>
-%s
-</div></div>"""
-TEMPLATE_NO_RECORDS_CLIENT = TEMPLATE_NO_RECORDS % ('Client', '<p><span class="red">ERROR</span>: No xmpp-client DNS SRV records found!  XMPP clients will try to login to %(hostname)s on port 5222.  If this is incorrect then logging in will fail.</p>')
-TEMPLATE_NO_RECORDS_SERVER = TEMPLATE_NO_RECORDS % ('Server', '<p><span class="red">ERROR</span>: No xmpp-server DNS SRV records found!  Other XMPP servers will try to peer with %(hostname)s on port 5269.  If this is incorrect then peering won\'t work correctly.</p>')
-
-# These templates are used to display records for a given domain
-TEMPLATE_RECORDS = """<div style="margin: 1em 0em;"><div class="bluecontainer">
-<h3>%s records for %%(hostname)s</h3>
-<p class="small">%s</p>
-<table>
-<tr><th>Target</th><th>Port</th><th>Priority</th><th>Weight</th></tr>
-%%(rows)s
-</table>
-%%(footnotes)s
-</div></div>"""
-TEMPLATE_RECORDS_CLIENT = TEMPLATE_RECORDS % ('Client', 'XMPP clients will use these when logging in.')
-TEMPLATE_RECORDS_SERVER = TEMPLATE_RECORDS % ('Server', 'Other XMPP servers will use these when peering with this domain.')
-
-TEMPLATE_RECORD = """<tr>
-<td>%(target)s</td>
-<td>%(port)s</td>
-<td>%(priority)s</td>
-<td>%(weight)s</td>
-%(errors)s
-</tr>"""
 
 def _sort_records(records):
     return sorted(records, key=lambda record: '%10d %10d %50s %d' % (record.priority, 1000000000 - record.weight, record.target, record.port))
 
 def _get_records(records, peer_name, record_type, standard_port, conflicting_records):
-    FLAG_NON_STANDARD_PORT = 1
-    FLAG_CLIENT_SERVER_SHARED_PORT = 2
-    footnotes_for_these_records = dict()
+    note_types_for_these_records = []
 
     # Create the list of result rows
     rows = []
     for record in records:
-        notes_for_this_record = []
+        note_types_for_this_record = set()
         if '%s:%s' % (record.target, record.port) in conflicting_records:
-            notes_for_this_record.append((FLAG_CLIENT_SERVER_SHARED_PORT, '<span class="red">ERROR</span> This host+port is listed for both client and server records'))
+            note_types_for_this_record.add(NoteType.CLIENT_SERVER_SHARED_PORT)
         if record.port != standard_port:
-            notes_for_this_record.append((FLAG_NON_STANDARD_PORT, 'INFO Non-standard port'))
+            note_types_for_this_record.add(NoteType.NON_STANDARD_PORT)
 
-        note_strings_for_this_record = []
-        for (note_type, note_text) in notes_for_this_record:
-            # Determine the flag number
-            if note_type in footnotes_for_these_records:
-                footnote_number = footnotes_for_these_records[note_type]
-            else:
-                footnote_number = len(footnotes_for_these_records) + 1
-                footnotes_for_these_records[note_type] = footnote_number
+        note_types_for_these_records.extend(note_types_for_this_record)
+        note_types_and_footnote_numbers = [
+            (note_type, note_types_for_these_records.index(note_type) + 1)
+            for note_type in note_types_for_this_record
+        ]
 
-            note_strings_for_this_record.append('%s<sup>%s</sup>' % (note_text, footnote_number))
-
-        if note_strings_for_this_record:
-            # The span in the following string shouldn't be necessary, but
-            # Chrome was rendering the vertical alignment weirdly without it.
-            errors = '<td><span>%s</span></td>' % '<br>'.join(note_strings_for_this_record)
-        else:
-            errors = ''
-
-        rows.append(TEMPLATE_RECORD % dict(
-            errors=errors,
+        rows.append(RecordTuple(
             port=record.port,
             priority=record.priority,
-            target=str(record.target).rstrip('.'), # Strip trailing period when displaying
+            # Strip trailing period when displaying
+            target=str(record.target).rstrip('.'),
             weight=record.weight,
-        ))
+            note_types_and_footnote_numbers=note_types_and_footnote_numbers))
 
-    # Change the footnotes dictionary into a list sorted by value
-    footnotes_for_these_records = sorted(footnotes_for_these_records.items(), key=lambda x: x[1])
+    return (rows, note_types_for_these_records)
 
-    # Create the list of extended info about any problems we noticed
-    footnotes = []
-    for (flag_type, footnote_number) in footnotes_for_these_records:
-        if flag_type == FLAG_CLIENT_SERVER_SHARED_PORT:
-            footnotes.append('<p class="footnote">%s. XMPP clients and servers use different handshakes when connecting to servers, so it is not possible for a single hostname+port combination to accept traffic from clients and other servers (at least, I think that\'s true--please <a href="mailto:mark@kingant.net">correct me</a> if I\'m wrong!).</p>' % (footnote_number))
-        elif flag_type == FLAG_NON_STANDARD_PORT:
-            footnotes.append('<p class="footnote">%s. The customary port for %s connections is %s.  Using a different port isn\'t necessarily bad&mdash;%s that correctly use DNS SRV records will happily connect to this port&mdash;but we thought it was worth pointing out in case it was an accident.</p>' % (footnote_number, record_type, standard_port, peer_name))
-
-    return ('\n'.join(rows), '\n'.join(footnotes))
 
 def _get_authoritative_name_servers_for_domain(domain):
     """Return a list of strings containing IP addresses of the name servers
@@ -409,132 +199,123 @@ def _get_authoritative_name_servers_for_domain(domain):
 
     return dns_resolver.nameservers
 
-def _get_main_body(hostname):
-    # Record domain name
-    open('requestledger.txt', 'a').write('%s\n' % urllib.parse.quote(hostname))
 
-    # Sanity check hostname
-    if hostname.find('..') != -1:
-        return TEMPLATE_ERROR % 'Invalid hostname'
+class RequestHandler:
+    def __init__(self, env, start_response):
+        self.env = env
+        self.start_response = start_response
 
-    # Create a DNS resolver to use for this request
-    dns_resolver = dns.resolver.Resolver()
+        # TODO: Using a persistent object for this would perform better.
+        # Might need to use gevent.local somehow.
+        self.jinja2_env = jinja2.Environment(
+            autoescape=True,
+            loader=jinja2.FileSystemLoader('templates'),
+            undefined=jinja2.StrictUndefined)
+        self.jinja2_env.globals = dict(NoteType=NoteType)
 
-    # Set a 2.5 second timeout on the resolver
-    dns_resolver.lifetime = 2.5
+    def handle(self):
+        form = cgi.FieldStorage(environ=self.env)
 
-    # Look up the list of authoritative name servers for this domain and query
-    # them directly when looking up XMPP SRV records. We do this to avoid any
-    # potential caching from intermediate name servers.
-    new_nameservers = _get_authoritative_name_servers_for_domain(hostname)
-    if new_nameservers:
-        dns_resolver.nameservers = new_nameservers
-    else:
-        # Couldn't determine authoritative name servers for domain.
-        # TODO: Log something? Show message to user?
-        pass
+        hostname = form['h'].value.strip() if 'h' in form else None
+        if hostname:
+            response_body = self._look_up_records(hostname)
+        else:
+            response_body = self.jinja2_env.get_template('index_base.html.jinja').render(
+                hostname='')
 
-    # Lookup records
-    try:
-        client_records = dns_resolver.query('_xmpp-client._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
-    except dns.exception.SyntaxError:
-        # TODO: Show "invalid hostname" for this
-        client_records = []
-    except dns.resolver.NXDOMAIN:
-        client_records = []
-    except dns.resolver.NoAnswer:
-        # TODO: Show a specific message for this
-        client_records = []
-    except dns.resolver.NoNameservers:
-        # TODO: Show a specific message for this
-        client_records = []
-    except dns.resolver.Timeout:
-        # TODO: Show a specific message for this
-        client_records = []
-    client_records_by_endpoint = set('%s:%s' % (record.target, record.port) for record in client_records)
+        self.start_response('200 OK', [('Content-Type', 'text/html')])
+        return [response_body.encode('utf-8')]
 
-    try:
-        server_records = dns_resolver.query('_xmpp-server._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
-    except dns.exception.SyntaxError:
-        # TODO: Show "invalid hostname" for this
-        server_records = []
-    except dns.resolver.NXDOMAIN:
-        server_records = []
-    except dns.resolver.NoAnswer:
-        # TODO: Show a specific message for this
-        server_records = []
-    except dns.resolver.NoNameservers:
-        # TODO: Show a specific message for this
-        server_records = []
-    except dns.resolver.Timeout:
-        # TODO: Show a specific message for this
-        server_records = []
-    server_records_by_endpoint = set('%s:%s' % (record.target, record.port) for record in server_records)
+    def _look_up_records(self, hostname):
+        """Looks up the DNS records for the given hostname and returns
+        a namedtuple.
+        """
+        # Record domain name
+        open('requestledger.txt', 'a').write('%s\n' % urllib.parse.quote(hostname))
 
-    # Construct output
-    ret = []
+        # Sanity check hostname
+        if hostname.find('..') != -1:
+            return self.jinja2_env.get_template('index_with_lookup_error.html.jinja').render(
+                hostname=hostname,
+                error_message='Invalid hostname')
 
-    if client_records:
-        client_records = _sort_records(client_records)
-        (rows, footnotes) = _get_records(client_records, 'clients', 'client-to-server', 5222, server_records_by_endpoint)
-        ret.append(TEMPLATE_RECORDS_CLIENT % dict(
-            footnotes=footnotes,
-            hostname=cgi.escape(hostname, True),
-            rows=rows,
-        ))
-    else:
-        ret.append(TEMPLATE_NO_RECORDS_CLIENT % dict(
-            hostname=cgi.escape(hostname, True),
-        ))
+        # Create a DNS resolver to use for this request
+        dns_resolver = dns.resolver.Resolver()
 
-    ret.append('')
+        # Set a 2.5 second timeout on the resolver
+        dns_resolver.lifetime = 2.5
 
-    if server_records:
-        server_records = _sort_records(server_records)
-        (rows, footnotes) = _get_records(server_records, 'servers', 'server-to-server', 5269, client_records_by_endpoint)
-        ret.append(TEMPLATE_RECORDS_SERVER % dict(
-            footnotes=footnotes,
-            hostname=cgi.escape(hostname, True),
-            rows=rows,
-        ))
-    else:
-        ret.append(TEMPLATE_NO_RECORDS_SERVER % dict(
-            hostname=cgi.escape(hostname, True),
-        ))
+        # Look up the list of authoritative name servers for this domain and query
+        # them directly when looking up XMPP SRV records. We do this to avoid any
+        # potential caching from intermediate name servers.
+        new_nameservers = _get_authoritative_name_servers_for_domain(hostname)
+        if new_nameservers:
+            dns_resolver.nameservers = new_nameservers
+        else:
+            # Couldn't determine authoritative name servers for domain.
+            # TODO: Log something? Show message to user?
+            pass
 
-    return '\n'.join(ret)
+        # Lookup records
+        try:
+            client_records = dns_resolver.query('_xmpp-client._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
+        except dns.exception.SyntaxError:
+            # TODO: Show "invalid hostname" for this
+            client_records = []
+        except dns.resolver.NXDOMAIN:
+            client_records = []
+        except dns.resolver.NoAnswer:
+            # TODO: Show a specific message for this
+            client_records = []
+        except dns.resolver.NoNameservers:
+            # TODO: Show a specific message for this
+            client_records = []
+        except dns.resolver.Timeout:
+            # TODO: Show a specific message for this
+            client_records = []
+        client_records_by_endpoint = set('%s:%s' % (record.target, record.port) for record in client_records)
 
-def _handle_request(env, start_response):
-    form = cgi.FieldStorage(environ=env)
+        try:
+            server_records = dns_resolver.query('_xmpp-server._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
+        except dns.exception.SyntaxError:
+            # TODO: Show "invalid hostname" for this
+            server_records = []
+        except dns.resolver.NXDOMAIN:
+            server_records = []
+        except dns.resolver.NoAnswer:
+            # TODO: Show a specific message for this
+            server_records = []
+        except dns.resolver.NoNameservers:
+            # TODO: Show a specific message for this
+            server_records = []
+        except dns.resolver.Timeout:
+            # TODO: Show a specific message for this
+            server_records = []
+        server_records_by_endpoint = set('%s:%s' % (record.target, record.port) for record in server_records)
 
-    if 'h' in form:
-        hostname = form['h'].value.strip()
-    else:
-        hostname = ''
+        if client_records:
+            client_records = _sort_records(client_records)
+            (client_records, client_record_note_types) = _get_records(client_records, 'clients', 'client-to-server', 5222, server_records_by_endpoint)
 
-    if hostname:
-        body = _get_main_body(hostname)
-        submit_button_disabled = ''
-    else:
-        body = ''
-        submit_button_disabled = 'disabled="disabled"'
+        if server_records:
+            server_records = _sort_records(server_records)
+            (server_records, server_record_note_types) = _get_records(server_records, 'servers', 'server-to-server', 5269, client_records_by_endpoint)
 
-    response_body = MAIN_TEMPLATE % dict(
-        hostname=cgi.escape(hostname, True),
-        body=body,
-        submit_button_disabled=submit_button_disabled,
-    )
+        return self.jinja2_env.get_template('index_with_successful_lookup.html.jinja').render(
+            hostname=hostname,
+            client_records=client_records,
+            client_record_note_types=client_record_note_types,
+            server_records=server_records,
+            server_record_note_types=server_record_note_types)
 
-    start_response('200 OK', [('Content-Type', 'text/html')])
-    return [response_body.encode('utf-8')]
 
 def application(env, start_response):
     """WSGI application entry point."""
 
     try:
-        return _handle_request(env, start_response)
+        return RequestHandler(env, start_response).handle()
     except:
-        logging.exception('Unknown error handling request.  env=%s', env)
+        logging.exception('Unknown error handling request. env=%s', env)
         raise
 
 if __name__ == '__main__':

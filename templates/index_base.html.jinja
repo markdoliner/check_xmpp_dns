@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Check DNS SRV records for XMPP</title>
+
+<style type="text/css">
+.bluecontainer {
+    background-color: #d0e0f8;
+    border-radius: 10px;
+    display: inline-block;
+    padding: 0em 1em 0.5em 1em;
+}
+
+.note {
+}
+
+.footnote {
+    color: #505050;
+    display: block;
+    font-size: 80%;
+    padding-left: 1.5em;
+    text-indent: -1.5em;
+}
+
+.grey {
+    color: #505050;
+}
+
+.red {
+    color: #e00000;
+}
+
+.small {
+    font-size: 80%;
+}
+
+#formcontainer {
+    background-color: #e0e0e0;
+    border-radius: 10px;
+    display: inline-block;
+    padding: 1.5em;
+}
+
+#maincontent {
+    background-color: #eeeeee;
+    border-radius: 20px;
+    padding: 1em 2em;
+}
+
+a:link {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+a.hiddenlink:active, a.hiddenlink:link, a.hiddenlink:visited {
+    color: #000000;
+}
+
+a.greyhiddenlink:active, a.greyhiddenlink:link, a.greyhiddenlink:visited {
+    color: #505050;
+}
+
+body {
+    background-color: #333333;
+    font-family: sans-serif;
+    padding: 2em;
+}
+
+h3 {
+    margin-bottom: 0.5em;
+}
+
+hr {
+    background-color: #000060;
+    border: 0;
+    height: 3px;
+    margin: 2em auto 2em 0;
+    width: 40%;
+}
+
+p {
+    max-width: 40em;
+    margin-top: 0.5em;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+td, th {
+    border: 1px dashed #c0c0c0;
+    padding: 0.2em 0.5em;
+    vertical-align: top;
+}
+
+td {
+    font-family: monospace;
+}
+</style>
+
+<script type="text/javascript">
+/* Form validation */
+function validate(field) {
+    document.getElementById('submit_button').disabled = (field.value.length == 0);
+}
+
+/* Google Analytics */
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+ga('create', 'UA-514515-1', 'kingant.net');
+ga('send', 'pageview');
+</script>
+</head>
+
+<body>
+<div id="maincontent">
+
+<h1><a class="hiddenlink" href=".">Check DNS SRV records for XMPP</a></h1>
+
+<div id="formcontainer">
+<form action="?" method="GET">
+<input id="input_box" name="h" onInput="validate(this)" value="{{ hostname }}">
+<input {% if not hostname %}disabled="disabled" {% endif %}sid="submit_button" type="submit" value="Check">
+</form>
+<div class="small grey" style="margin-left: 1em;">
+ex: <a class="greyhiddenlink" href="?h=jabber.org">jabber.org</a><br>
+ex: <a class="greyhiddenlink" href="?h=gmail.com">gmail.com</a><br>
+ex: <a class="greyhiddenlink" href="?h=kingant.net">kingant.net</a>
+</div>
+</div>
+
+{%- block results -%}
+{%- endblock %}
+
+<hr>
+
+<h2>About</h2>
+<p>The XMPP Core RFC describes a method of <a href="https://xmpp.org/rfcs/rfc6120.html#tcp-resolution-prefer">using DNS SRV records</a> to determine the host and port to connect to when logging into an XMPP account. It can sometimes be tricky to configure these records. Use this page as a tool to verify that your DNS SRV records are correct.</p>
+
+<p>You can also fetch these records yourself with any of the following commands.<br>
+<span class="small grey">Linux, OS X&gt;</span> <code>host -t SRV _xmpp-client._tcp.example.com</code><br>
+<span class="small grey">Linux, OS X&gt;</span> <code>host -t SRV _xmpp-server._tcp.example.com</code><br>
+<span class="small grey">Linux, OS X&gt;</span> <code>dig _xmpp-client._tcp.example.com SRV</code><br>
+<span class="small grey">Linux, OS X&gt;</span> <code>dig _xmpp-server._tcp.example.com SRV</code><br>
+<span class="small grey">Linux, OS X, Windows&gt;</span> <code>nslookup -querytype=SRV _xmpp-client._tcp.example.com</code><br>
+<span class="small grey">Linux, OS X, Windows&gt;</span> <code>nslookup -querytype=SRV _xmpp-server._tcp.example.com</code>
+</p>
+
+<p><b>This Page</b><br>
+Created by <a href="https://kingant.net/">Mark Doliner</a><br>
+<a href="https://github.com/markdoliner/check_xmpp_dns">Source available</a> on GitHub
+</p>
+
+{# TODO: Update these links. -#}
+<p><b>Other Resources</b><br>
+<a href="https://xmpp.net/">IM Observatory</a> (general info)<br>
+<a href="http://www.process-one.net/en/imtrends/">IMtrends</a> (general info)<br>
+<a href="https://www.olark.com/gtalk/check_srv">Olark's DNS SRV help page</a> (DNS SRV specific)<br>
+<a href="https://support.google.com/a/answer/34143">Google's official help page for configuring server records</a> (DNS SRV specific)
+</p>
+
+</div>
+</body>
+</html>

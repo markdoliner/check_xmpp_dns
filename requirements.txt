@@ -1,3 +1,4 @@
 dnspython
 gevent
 isort
+jinja2

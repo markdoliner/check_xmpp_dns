@@ -1,0 +1,73 @@
+{% extends "index_base.html.jinja" %}
+
+{%- macro show_records(description, records, note_types_for_these_records) -%}
+<p class="small">{{ description }}</p>
+
+<table>
+<tr><th>Target</th><th>Port</th><th>Priority</th><th>Weight</th></tr>
+{% for record in records -%}
+{{ show_record(record) }}
+{% endfor -%}
+</table>
+
+{#- Footnotes are numbered according to their index in the
+    note_types_for_these_records list. -#}
+{%- for note_type in note_types_for_these_records %}
+{% set footnote_number = loop.index %}
+<p class="footnote">
+{%- if note_type == NoteType.CLIENT_SERVER_SHARED_PORT -%}
+{{ footnote_number }}. XMPP clients and servers use different handshakes when connecting to servers, so it is not possible for a single hostname+port combination to accept traffic from clients and other servers (at least, I think that's true&mdash;please <a href="mailto:mark@kingant.net">correct me</a> if I'm wrong!).
+{%- elif note_type == NoteType.NON_STANDARD_PORT -%}
+{{ footnote_number }}. The customary port for {{ 'client|server' }} connections is {{ 'some port' }}. Using a different port isn't necessarily bad&mdash;{{ 'clients|servers' }} that correctly use DNS SRV records will happily connect to this port&mdash;but we thought it was worth pointing out in case it was an accident.
+{%- endif -%}
+</p>
+{% endfor -%}
+
+{%- endmacro -%}
+
+{%- macro show_record(record) -%}
+<tr>
+<td>{{ record.target }}</td>
+<td>{{ record.port }}</td>
+<td>{{ record.priority }}</td>
+<td>{{ record.weight }}</td>
+{%- if record.note_types_and_footnote_numbers %}
+<td>
+{%- for (note_type, footnote_number) in record.note_types_and_footnote_numbers %}
+<div class="note">
+{%- if note_type == NoteType.CLIENT_SERVER_SHARED_PORT -%}
+<span class="red">ERROR</span>: This host+port is listed for both client and server records<sup>{{ footnote_number }}
+{%- elif note_type == NoteType.NON_STANDARD_PORT -%}
+INFO: Non-standard port<sup>{{ footnote_number }}</sup>
+{%- endif -%}
+</div>
+{%- endfor %}
+</td>
+{% endif -%}
+</tr>
+{%- endmacro -%}
+
+{% block results %}
+
+<div style="margin: 1em 0em;"><div class="bluecontainer">
+<h3>Client records for {{ hostname }}</h3>
+{% if client_records -%}
+{{ show_records('XMPP clients will use these when logging in.',
+                client_records,
+                client_record_note_types) -}}
+{% else %}
+<p><span class="red">ERROR</span>: No xmpp-client DNS SRV records found! XMPP clients will try to login to {{ hostname }} on port 5222. If this is incorrect then logging in will fail.</p>
+{% endif %}
+</div></div>
+
+<div style="margin: 1em 0em;"><div class="bluecontainer">
+<h3>Server records for {{ hostname }}</h3>
+{% if server_records -%}
+{{ show_records('Other XMPP servers will use these when peering with this domain.',
+                server_records,
+                server_record_note_types) }}
+{% else %}
+<p><span class="red">ERROR</span>: No xmpp-server DNS SRV records found! Other XMPP servers will try to peer with {{ hostname }} on port 5269. If this is incorrect then peering won\'t work correctly.</p>
+{% endif %}
+</div></div>
+{%- endblock %}
