@@ -14,3 +14,5 @@ check:
 		>&2 echo "\nRun 'make sort-imports' to fix.\n"; \
 		exit 1; \
 	fi
+	pycodestyle check_xmpp_dns.py
+	pylint check_xmpp_dns.py

@@ -41,7 +41,7 @@
 #       hostname before submitting the form, so that the hostname is pretty in
 #       the URL.
 
-#import gevent.monkey; gevent.monkey.patch_all()
+# import gevent.monkey; gevent.monkey.patch_all()
 
 import cgi
 import collections
@@ -49,7 +49,7 @@ import enum
 import logging
 import urllib.parse
 
-#import cgitb; cgitb.enable()
+# import cgitb; cgitb.enable()
 import dns.exception
 import dns.resolver
 import jinja2
@@ -71,9 +71,13 @@ RecordTuple = collections.namedtuple('RecordTuple', [
 
 
 def _sort_records(records):
-    return sorted(records, key=lambda record: '%10d %10d %50s %d' % (record.priority, 1000000000 - record.weight, record.target, record.port))
+    return sorted(
+        records,
+        key=lambda record: '%10d %10d %50s %d' % (
+            record.priority, 1000000000 - record.weight, record.target, record.port))
 
-def _get_records(records, peer_name, record_type, standard_port, conflicting_records):
+
+def _get_records(records, standard_port, conflicting_records):
     note_types_for_these_records = []
 
     # Create the list of result rows
@@ -258,7 +262,8 @@ class RequestHandler:
 
         # Lookup records
         try:
-            client_records = dns_resolver.query('_xmpp-client._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
+            client_records = dns_resolver.query(
+                '_xmpp-client._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
         except dns.exception.SyntaxError:
             # TODO: Show "invalid hostname" for this
             client_records = []
@@ -273,10 +278,13 @@ class RequestHandler:
         except dns.resolver.Timeout:
             # TODO: Show a specific message for this
             client_records = []
-        client_records_by_endpoint = set('%s:%s' % (record.target, record.port) for record in client_records)
+        client_records_by_endpoint = set(
+            '%s:%s' % (record.target, record.port)
+            for record in client_records)
 
         try:
-            server_records = dns_resolver.query('_xmpp-server._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
+            server_records = dns_resolver.query(
+                '_xmpp-server._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
         except dns.exception.SyntaxError:
             # TODO: Show "invalid hostname" for this
             server_records = []
@@ -291,15 +299,19 @@ class RequestHandler:
         except dns.resolver.Timeout:
             # TODO: Show a specific message for this
             server_records = []
-        server_records_by_endpoint = set('%s:%s' % (record.target, record.port) for record in server_records)
+        server_records_by_endpoint = set(
+            '%s:%s' % (record.target, record.port)
+            for record in server_records)
 
         if client_records:
             client_records = _sort_records(client_records)
-            (client_records, client_record_note_types) = _get_records(client_records, 'clients', 'client-to-server', 5222, server_records_by_endpoint)
+            (client_records, client_record_note_types) = _get_records(
+                client_records, 5222, server_records_by_endpoint)
 
         if server_records:
             server_records = _sort_records(server_records)
-            (server_records, server_record_note_types) = _get_records(server_records, 'servers', 'server-to-server', 5269, client_records_by_endpoint)
+            (server_records, server_record_note_types) = _get_records(
+                server_records, 5269, client_records_by_endpoint)
 
         return self.jinja2_env.get_template('index_with_successful_lookup.html.jinja').render(
             hostname=hostname,
@@ -314,9 +326,10 @@ def application(env, start_response):
 
     try:
         return RequestHandler(env, start_response).handle()
-    except:
+    except Exception:
         logging.exception('Unknown error handling request. env=%s', env)
         raise
+
 
 if __name__ == '__main__':
     logging.basicConfig(filename='log')
