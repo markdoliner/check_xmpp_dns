@@ -268,7 +268,10 @@ class RequestHandler:
             # TODO: Show "invalid hostname" for this
             client_records = []
         except dns.resolver.NXDOMAIN:
-            client_records = []
+            client_records = dns_resolver.query(
+                '_xmpps-client._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
+            if dns.resolver.NXDOMAIN
+              client_records = []
         except dns.resolver.NoAnswer:
             # TODO: Show a specific message for this
             client_records = []
@@ -289,7 +292,10 @@ class RequestHandler:
             # TODO: Show "invalid hostname" for this
             server_records = []
         except dns.resolver.NXDOMAIN:
-            server_records = []
+            server_records = dns_resolver.query(
+                '_xmpps-server._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
+            if dns.resolver.NXDOMAIN
+              server_records = []
         except dns.resolver.NoAnswer:
             # TODO: Show a specific message for this
             server_records = []
