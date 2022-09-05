@@ -127,7 +127,7 @@ ga('send', 'pageview');
 <div id="formcontainer">
 <form action="?" method="GET">
 <input id="input_box" name="h" onInput="validate(this)" value="{{ hostname }}">
-<input {% if not hostname %}disabled="disabled" {% endif %}sid="submit_button" type="submit" value="Check">
+<input {% if not hostname %}disabled="disabled" {% endif %}id="submit_button" type="submit" value="Check">
 </form>
 <div class="small grey" style="margin-left: 1em;">
 ex: <a class="greyhiddenlink" href="?h=jabber.org">jabber.org</a><br>
