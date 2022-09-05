@@ -130,7 +130,7 @@ def _get_authoritative_name_servers_for_domain(domain):
     for i in range(len(pieces)-1, 0, -1):
         broader_domain = '.'.join(pieces[i-1:])
         try:
-            answer = dns_resolver.query(broader_domain, dns.rdatatype.NS)
+            answer = dns_resolver.resolve(broader_domain, dns.rdatatype.NS)
         except dns.exception.SyntaxError:
             # TODO: Show "invalid hostname" for this?
             return None
@@ -162,7 +162,7 @@ def _get_authoritative_name_servers_for_domain(domain):
                 # TODO: Don't do this if the nameserver we just queried gave us
                 # an additional record that includes the IP.
                 try:
-                    answer2 = dns_resolver.query(record.to_text())
+                    answer2 = dns_resolver.resolve(record.to_text())
                 except dns.exception.SyntaxError:
                     # TODO: Show "invalid hostname" for this?
                     return None
@@ -260,9 +260,9 @@ class RequestHandler:
             # TODO: Log something? Show message to user?
             pass
 
-        # Lookup records
+        # Look up records
         try:
-            client_records = dns_resolver.query(
+            client_records = dns_resolver.resolve(
                 '_xmpp-client._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
         except dns.exception.SyntaxError:
             # TODO: Show "invalid hostname" for this
@@ -283,7 +283,7 @@ class RequestHandler:
             for record in client_records)
 
         try:
-            server_records = dns_resolver.query(
+            server_records = dns_resolver.resolve(
                 '_xmpp-server._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
         except dns.exception.SyntaxError:
             # TODO: Show "invalid hostname" for this
