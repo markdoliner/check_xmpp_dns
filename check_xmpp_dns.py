@@ -339,4 +339,4 @@ if __name__ == '__main__':
     logging.basicConfig(filename='log')
 
     import gevent.pywsgi
-    gevent.pywsgi.WSGIServer(('', 1000), application=application).serve_forever()
+    gevent.pywsgi.WSGIServer(('', 8080), application=application).serve_forever()
