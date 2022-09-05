@@ -307,11 +307,15 @@ class RequestHandler:
             client_records = _sort_records(client_records)
             (client_records, client_record_note_types) = _get_records(
                 client_records, 5222, server_records_by_endpoint)
+        else:
+            client_record_note_types = []
 
         if server_records:
             server_records = _sort_records(server_records)
             (server_records, server_record_note_types) = _get_records(
                 server_records, 5269, client_records_by_endpoint)
+        else:
+            server_record_note_types = []
 
         return self.jinja2_env.get_template('index_with_successful_lookup.html.jinja').render(
             hostname=hostname,
