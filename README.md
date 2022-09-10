@@ -23,6 +23,7 @@ Dependencies
   * (be sure paths, user and permissions are set properly). \
     Copy `check_xmpp_dns.service` to `/etc/systemd/system/check_xmpp_dns.service`
     and copy `tmpfiles.d_gunicorn.conf` to `/etc/tmpfiles.d/gunicorn.conf`
+* (optional) black. For auto formatting.
 
 
 Local development
@@ -34,7 +35,15 @@ virtualenv venv
 pip install -r requirements.txt
 ./check_xmpp_dns.py
 ```
-Then open http://localhost:1000/ in a web browser.
+Then open http://localhost:8080/ in a web browser.
+
+Alternatively you can use gunicorn with --reload to restart the server
+automatically when the code changes:
+```
+. venv/bin/activate
+pip install gunicorn
+./venv/bin/gunicorn --bind 127.0.0.1:8080 --reload check_xmpp_dns:application
+```
 
 
 How to deploy to a real server
@@ -46,7 +55,7 @@ See the notes about gunicorn3 in the dependency section above for
 some rough instructions on running the script as a systemd service.
 
 Another option is to run the script directly. It starts a plain HTTP
-server on port 1000 using the gevent WSGI server. You could proxy
+server on port 8080 using the gevent WSGI server. You could proxy
 traffic to this port from another web server.
 
 Or you can use any other WSGI server to start the script's 'application'
