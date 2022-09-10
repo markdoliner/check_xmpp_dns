@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Licensed as follows (this is the 2-clause BSD license, aka
 # "Simplified BSD License" or "FreeBSD License"):
 #
-# Copyright (c) 2011-2014,2019, Mark Doliner
+# Copyright (c) 2011-2014,2019,2022, Mark Doliner
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
