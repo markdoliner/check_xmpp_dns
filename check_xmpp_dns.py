@@ -61,20 +61,24 @@ class NoteType(enum.Enum):
     CLIENT_SERVER_SHARED_PORT = enum.auto()
 
 
-RecordTuple = collections.namedtuple('RecordTuple', [
-    'port',
-    'priority',
-    'target',
-    'weight',
-    'note_types_and_footnote_numbers',  # a 2-item tuple
-])
+RecordTuple = collections.namedtuple(
+    "RecordTuple",
+    [
+        "port",
+        "priority",
+        "target",
+        "weight",
+        "note_types_and_footnote_numbers",  # a 2-item tuple
+    ],
+)
 
 
 def _sort_records(records):
     return sorted(
         records,
-        key=lambda record: '%10d %10d %50s %d' % (
-            record.priority, 1000000000 - record.weight, record.target, record.port))
+        key=lambda record: "%10d %10d %50s %d"
+        % (record.priority, 1000000000 - record.weight, record.target, record.port),
+    )
 
 
 def _get_records(records, standard_port, conflicting_records):
@@ -84,7 +88,7 @@ def _get_records(records, standard_port, conflicting_records):
     rows = []
     for record in records:
         note_types_for_this_record = set()
-        if '%s:%s' % (record.target, record.port) in conflicting_records:
+        if "%s:%s" % (record.target, record.port) in conflicting_records:
             note_types_for_this_record.add(NoteType.CLIENT_SERVER_SHARED_PORT)
         if record.port != standard_port:
             note_types_for_this_record.add(NoteType.NON_STANDARD_PORT)
@@ -95,13 +99,16 @@ def _get_records(records, standard_port, conflicting_records):
             for note_type in note_types_for_this_record
         ]
 
-        rows.append(RecordTuple(
-            port=record.port,
-            priority=record.priority,
-            # Strip trailing period when displaying
-            target=str(record.target).rstrip('.'),
-            weight=record.weight,
-            note_types_and_footnote_numbers=note_types_and_footnote_numbers))
+        rows.append(
+            RecordTuple(
+                port=record.port,
+                priority=record.priority,
+                # Strip trailing period when displaying
+                target=str(record.target).rstrip("."),
+                weight=record.weight,
+                note_types_and_footnote_numbers=note_types_and_footnote_numbers,
+            )
+        )
 
     return (rows, note_types_for_these_records)
 
@@ -126,9 +133,9 @@ def _get_authoritative_name_servers_for_domain(domain):
     # piece of the hostname (e.g. 'com' or 'net') because the list of root
     # servers should rarely change and changes shouldn't affect the outcome
     # of these queries.
-    pieces = domain.split('.')
-    for i in range(len(pieces)-1, 0, -1):
-        broader_domain = '.'.join(pieces[i-1:])
+    pieces = domain.split(".")
+    for i in range(len(pieces) - 1, 0, -1):
+        broader_domain = ".".join(pieces[i - 1 :])
         try:
             answer = dns_resolver.resolve(broader_domain, dns.rdatatype.NS)
         except dns.exception.SyntaxError:
@@ -213,35 +220,37 @@ class RequestHandler:
         # Might need to use gevent.local somehow.
         self.jinja2_env = jinja2.Environment(
             autoescape=True,
-            loader=jinja2.FileSystemLoader('templates'),
-            undefined=jinja2.StrictUndefined)
+            loader=jinja2.FileSystemLoader("templates"),
+            undefined=jinja2.StrictUndefined,
+        )
         self.jinja2_env.globals = dict(NoteType=NoteType)
 
     def handle(self):
         form = cgi.FieldStorage(environ=self.env)
 
-        hostname = form['h'].value.strip() if 'h' in form else None
+        hostname = form["h"].value.strip() if "h" in form else None
         if hostname:
             response_body = self._look_up_records(hostname)
         else:
-            response_body = self.jinja2_env.get_template('index_base.html.jinja').render(
-                hostname='')
+            response_body = self.jinja2_env.get_template(
+                "index_base.html.jinja"
+            ).render(hostname="")
 
-        self.start_response('200 OK', [('Content-Type', 'text/html')])
-        return [response_body.encode('utf-8')]
+        self.start_response("200 OK", [("Content-Type", "text/html")])
+        return [response_body.encode("utf-8")]
 
     def _look_up_records(self, hostname):
         """Looks up the DNS records for the given hostname and returns
         a namedtuple.
         """
         # Record domain name
-        open('requestledger.txt', 'a').write('%s\n' % urllib.parse.quote(hostname))
+        open("requestledger.txt", "a").write("%s\n" % urllib.parse.quote(hostname))
 
         # Sanity check hostname
-        if hostname.find('..') != -1:
-            return self.jinja2_env.get_template('index_with_lookup_error.html.jinja').render(
-                hostname=hostname,
-                error_message='Invalid hostname')
+        if hostname.find("..") != -1:
+            return self.jinja2_env.get_template(
+                "index_with_lookup_error.html.jinja"
+            ).render(hostname=hostname, error_message="Invalid hostname")
 
         # Create a DNS resolver to use for this request
         dns_resolver = dns.resolver.Resolver()
@@ -263,7 +272,8 @@ class RequestHandler:
         # Look up records
         try:
             client_records = dns_resolver.resolve(
-                '_xmpp-client._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
+                "_xmpp-client._tcp.%s" % hostname, rdtype=dns.rdatatype.SRV
+            )
         except dns.exception.SyntaxError:
             # TODO: Show "invalid hostname" for this
             client_records = []
@@ -279,12 +289,13 @@ class RequestHandler:
             # TODO: Show a specific message for this
             client_records = []
         client_records_by_endpoint = set(
-            '%s:%s' % (record.target, record.port)
-            for record in client_records)
+            "%s:%s" % (record.target, record.port) for record in client_records
+        )
 
         try:
             server_records = dns_resolver.resolve(
-                '_xmpp-server._tcp.%s' % hostname, rdtype=dns.rdatatype.SRV)
+                "_xmpp-server._tcp.%s" % hostname, rdtype=dns.rdatatype.SRV
+            )
         except dns.exception.SyntaxError:
             # TODO: Show "invalid hostname" for this
             server_records = []
@@ -300,29 +311,34 @@ class RequestHandler:
             # TODO: Show a specific message for this
             server_records = []
         server_records_by_endpoint = set(
-            '%s:%s' % (record.target, record.port)
-            for record in server_records)
+            "%s:%s" % (record.target, record.port) for record in server_records
+        )
 
         if client_records:
             client_records = _sort_records(client_records)
             (client_records, client_record_note_types) = _get_records(
-                client_records, 5222, server_records_by_endpoint)
+                client_records, 5222, server_records_by_endpoint
+            )
         else:
             client_record_note_types = []
 
         if server_records:
             server_records = _sort_records(server_records)
             (server_records, server_record_note_types) = _get_records(
-                server_records, 5269, client_records_by_endpoint)
+                server_records, 5269, client_records_by_endpoint
+            )
         else:
             server_record_note_types = []
 
-        return self.jinja2_env.get_template('index_with_successful_lookup.html.jinja').render(
+        return self.jinja2_env.get_template(
+            "index_with_successful_lookup.html.jinja"
+        ).render(
             hostname=hostname,
             client_records=client_records,
             client_record_note_types=client_record_note_types,
             server_records=server_records,
-            server_record_note_types=server_record_note_types)
+            server_record_note_types=server_record_note_types,
+        )
 
 
 def application(env, start_response):
@@ -331,12 +347,13 @@ def application(env, start_response):
     try:
         return RequestHandler(env, start_response).handle()
     except Exception:
-        logging.exception('Unknown error handling request. env=%s', env)
+        logging.exception("Unknown error handling request. env=%s", env)
         raise
 
 
-if __name__ == '__main__':
-    logging.basicConfig(filename='log')
+if __name__ == "__main__":
+    logging.basicConfig(filename="log")
 
     import gevent.pywsgi
-    gevent.pywsgi.WSGIServer(('', 8080), application=application).serve_forever()
+
+    gevent.pywsgi.WSGIServer(("", 8080), application=application).serve_forever()
