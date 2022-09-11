@@ -4,9 +4,9 @@
 <p class="small">{{ description }}</p>
 
 <table>
-<tr><th>Target</th><th>Port</th><th>Priority</th><th>Weight</th></tr>
+<tr><th>Target</th><th>Port</th><th>Priority</th><th>Weight</th>{%- if note_types_for_these_records -%}<th>Notes</th>{%- endif -%}</tr>
 {% for record in records -%}
-{{ show_record(record) }}
+{{ show_record(record, note_types_for_these_records) }}
 {% endfor -%}
 </table>
 
@@ -28,13 +28,13 @@
 
 {%- endmacro -%}
 
-{%- macro show_record(record) -%}
+{%- macro show_record(record, note_types_for_these_records) -%}
 <tr>
 <td>{{ record.target }}</td>
 <td>{{ record.port }}</td>
 <td>{{ record.priority }}</td>
 <td>{{ record.weight }}</td>
-{%- if record.note_types_and_footnote_numbers %}
+{% if note_types_for_these_records -%}
 <td>
 {%- for (note_type, footnote_number) in record.note_types_and_footnote_numbers %}
 <div class="note">
