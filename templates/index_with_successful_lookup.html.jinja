@@ -10,6 +10,9 @@
 {% endfor -%}
 </table>
 
+{%- if note_types_for_these_records %}
+<h5>Footnotes</h5>
+{% endif -%}
 {#- Footnotes are numbered according to their index in the
     note_types_for_these_records list. -#}
 {%- for note_type in note_types_for_these_records %}
