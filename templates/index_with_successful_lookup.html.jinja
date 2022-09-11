@@ -37,6 +37,14 @@
 {% if note_types_for_these_records -%}
 <td>
 {%- for (note_type, footnote_number) in record.note_types_and_footnote_numbers %}
+{{ show_note(note_type, footnote_number) }}
+{%- endfor %}
+</td>
+{% endif -%}
+</tr>
+{%- endmacro -%}
+
+{%- macro show_note(note_type, footnote_number) -%}
 <div class="note">
 {%- if note_type == NoteType.CLIENT_SERVER_SHARED_PORT -%}
 <span class="red">ERROR</span>: This host+port is listed for both client and server records<sup>{{ footnote_number }}
@@ -44,10 +52,6 @@
 INFO: Non-standard port<sup>{{ footnote_number }}</sup>
 {%- endif -%}
 </div>
-{%- endfor %}
-</td>
-{% endif -%}
-</tr>
 {%- endmacro -%}
 
 {% block results %}
