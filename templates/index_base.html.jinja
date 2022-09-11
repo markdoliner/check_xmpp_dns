@@ -144,13 +144,15 @@ ex: <a class="greyhiddenlink" href="?h=kingant.net">kingant.net</a>
 <h2>About</h2>
 <p>The XMPP Core RFC describes a method of <a href="https://xmpp.org/rfcs/rfc6120.html#tcp-resolution-prefer">using DNS SRV records</a> to determine the host and port to connect to when logging into an XMPP account. It can sometimes be tricky to configure these records. Use this page as a tool to verify that your DNS SRV records are correct.</p>
 
-<p>You can also fetch these records yourself with any of the following commands.<br>
+<p>You can also fetch these records yourself with any of the following
+commands. Change <code>example.com</code> to your domain. Change
+<code>client</code> to <code>server</code> to look up the port that
+servers should connect to.</p>
+
+<p>
 <span class="small grey">Linux, macOS&gt;</span> <code>host -t SRV _xmpp-client._tcp.example.com</code><br>
-<span class="small grey">Linux, macOS&gt;</span> <code>host -t SRV _xmpp-server._tcp.example.com</code><br>
 <span class="small grey">Linux, macOS&gt;</span> <code>dig _xmpp-client._tcp.example.com SRV</code><br>
-<span class="small grey">Linux, macOS&gt;</span> <code>dig _xmpp-server._tcp.example.com SRV</code><br>
-<span class="small grey">Linux, macOS, Windows&gt;</span> <code>nslookup -querytype=SRV _xmpp-client._tcp.example.com</code><br>
-<span class="small grey">Linux, macOS, Windows&gt;</span> <code>nslookup -querytype=SRV _xmpp-server._tcp.example.com</code>
+<span class="small grey">Linux, macOS, Windows&gt;</span> <code>nslookup -querytype=SRV _xmpp-client._tcp.example.com</code>
 </p>
 
 <p><b>This Page</b><br>
