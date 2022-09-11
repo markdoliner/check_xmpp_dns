@@ -47,9 +47,9 @@
 {%- macro show_note(note_type, footnote_number) -%}
 <div class="note">
 {%- if note_type == NoteType.CLIENT_SERVER_SHARED_PORT -%}
-<span class="red">ERROR</span>: This host+port is listed for both client and server records<sup>{{ footnote_number }}
+<span class="red">ERROR</span>: This host+port is listed for both client and server records.<sup>{{ footnote_number }}
 {%- elif note_type == NoteType.NON_STANDARD_PORT -%}
-INFO: Non-standard port<sup>{{ footnote_number }}</sup>
+Non-standard port.<sup>{{ footnote_number }}</sup>
 {%- endif -%}
 </div>
 {%- endmacro -%}
