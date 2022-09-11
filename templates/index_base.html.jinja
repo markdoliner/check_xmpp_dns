@@ -142,12 +142,20 @@ ex: <a class="greyhiddenlink" href="?h=kingant.net">kingant.net</a>
 <hr>
 
 <h2>About</h2>
-<p>The XMPP Core RFC describes a method of <a href="https://xmpp.org/rfcs/rfc6120.html#tcp-resolution-prefer">using DNS SRV records</a> to determine the host and port to connect to when logging into an XMPP account. It can sometimes be tricky to configure these records. Use this page as a tool to verify that your DNS SRV records are correct.</p>
+<p>XMPP clients can determine what host and port to connect to by
+looking up DNS SRV records. These records are described in
+<a href="https://xmpp.org/rfcs/rfc6120.html#tcp-resolution-prefer">section
+3.2.1 of the XMPP Core RFC</a> and in
+<a href="https://xmpp.org/extensions/xep-0368.html">XEP-0368</a>. It can
+be tricky to configure these records. Use this page as a tool to check
+that your DNS SRV records are correct.</p>
 
 <p>You can also fetch these records yourself with any of the following
 commands. Change <code>example.com</code> to your domain. Change
 <code>client</code> to <code>server</code> to look up the port that
-servers should connect to.</p>
+servers should connect to. Change <code>xmpp</code> to
+<code>xmpps</code> to look up the port for direct TLS aka XMPP over
+SSL or XMPP over TLS.</p>
 
 <p>
 <span class="small grey">Linux, macOS&gt;</span> <code>host -t SRV _xmpp-client._tcp.example.com</code><br>

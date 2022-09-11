@@ -40,40 +40,86 @@
 # TODO: Add JavaScript to strip leading and trailing whitespace in the
 #       hostname before submitting the form, so that the hostname is pretty in
 #       the URL.
+# TODO: Clean up types and make type checking happen automatically during
+#       local development.
+#
 
 # import gevent.monkey; gevent.monkey.patch_all()
 
 import cgi
-import collections
 import enum
 import logging
+import typing
 import urllib.parse
 
 # import cgitb; cgitb.enable()
 import dns.exception
 import dns.resolver
+import dns.rdatatype
+import dns.rdtypes.IN.SRV
+import dns.rrset
 import jinja2
 
 
 @enum.unique
+class ClientOrServerType(enum.Enum):
+    CLIENT = "client"
+    SERVER = "server"
+
+
+@enum.unique
+class TlsType(enum.Enum):
+    # The normal XMPP ports.
+    # These come from either _xmpp-client._tcp.example.com
+    # or _xmpp-server._tcp.example.com DNS records.
+    STARTTLS = "STARTTLS"
+
+    # Ports that require TLS negotiation immediately upon connecting,
+    # as discussed in XEP-0368.
+    # These come from either _xmpps-client._tcp.example.com
+    # or _xmpps-server._tcp.example.com DNS records.
+    DIRECT_TLS = "Direct TLS"
+
+
+STANDARD_PORTS: typing.Dict[typing.Tuple[ClientOrServerType, TlsType], int] = {
+    (ClientOrServerType.CLIENT, TlsType.STARTTLS): 5222,
+    (ClientOrServerType.CLIENT, TlsType.DIRECT_TLS): 5223,
+    (ClientOrServerType.SERVER, TlsType.STARTTLS): 5269,
+    (ClientOrServerType.SERVER, TlsType.DIRECT_TLS): 5270,
+}
+
+
+class AnswerTuple(typing.NamedTuple):
+    answer: dns.resolver.Answer
+    client_or_server: ClientOrServerType
+    tls_type: TlsType
+
+
+@enum.unique
 class NoteType(enum.Enum):
+    DIRECT_TLS = enum.auto()
     NON_STANDARD_PORT = enum.auto()
-    CLIENT_SERVER_SHARED_PORT = enum.auto()
+    PORT_REUSED_WITH_BOTH_TYPES_DIFFERENT = enum.auto()
+    PORT_REUSED_WITH_DIFFERENT_CLIENT_OR_SERVER_TYPE = enum.auto()
+    PORT_REUSED_WITH_DIFFERENT_TLS_TYPE = enum.auto()
 
 
-RecordTuple = collections.namedtuple(
-    "RecordTuple",
-    [
-        "port",
-        "priority",
-        "target",
-        "weight",
-        "note_types_and_footnote_numbers",  # a 2-item tuple
-    ],
-)
+class NoteForDisplay(typing.NamedTuple):
+    note_type: NoteType
+    note: str
 
 
-def _sort_records(records):
+class RecordForDisplay(typing.NamedTuple):
+    port: int
+    priority: int
+    target: str
+    weight: int
+    notes: typing.List[NoteForDisplay]
+
+
+def _sort_records_for_display(
+    records: typing.List[RecordForDisplay],
+) -> typing.List[RecordForDisplay]:
     return sorted(
         records,
         key=lambda record: "%10d %10d %50s %d"
@@ -81,39 +127,101 @@ def _sort_records(records):
     )
 
 
-def _get_records(records, standard_port, conflicting_records):
-    note_types_for_these_records = []
+def _build_records_for_display(
+    answers_list: typing.List[AnswerTuple], client_or_server: ClientOrServerType
+) -> typing.Tuple[typing.List[RecordForDisplay], typing.Dict[NoteType, int]]:
+    records_for_display = []
 
-    # Create the list of result rows
-    rows = []
-    for record in records:
-        note_types_for_this_record = set()
-        if "%s:%s" % (record.target, record.port) in conflicting_records:
-            note_types_for_this_record.add(NoteType.CLIENT_SERVER_SHARED_PORT)
-        if record.port != standard_port:
-            note_types_for_this_record.add(NoteType.NON_STANDARD_PORT)
+    for answers in answers_list:
+        if answers.client_or_server == client_or_server:
+            for record in answers.answer:
+                records_for_display.append(
+                    _build_record_for_display(record, answers, answers_list)
+                )
 
-        note_types_for_these_records.extend(note_types_for_this_record)
-        note_types_and_footnote_numbers = [
-            (note_type, note_types_for_these_records.index(note_type) + 1)
-            for note_type in note_types_for_this_record
-        ]
+    sorted_records_for_display = _sort_records_for_display(records_for_display)
 
-        rows.append(
-            RecordTuple(
-                port=record.port,
-                priority=record.priority,
-                # Strip trailing period when displaying
-                target=str(record.target).rstrip("."),
-                weight=record.weight,
-                note_types_and_footnote_numbers=note_types_and_footnote_numbers,
+    # dict is used here rather than set so that order is preserved.
+    # (As of Python 3.7 according to https://stackoverflow.com/a/39980744/1634007)
+    note_types_used_by_these_records: typing.Dict[NoteType, None] = {
+        note.note_type: None
+        for record in sorted_records_for_display
+        for note in record.notes
+    }
+    note_types_to_footnote_indexes = {
+        note_type: index + 1
+        for index, note_type in enumerate(note_types_used_by_these_records)
+    }
+
+    return (
+        sorted_records_for_display,
+        note_types_to_footnote_indexes,
+    )
+
+
+def _has_record_for_host_and_port(answers: AnswerTuple, target: str, port: int) -> bool:
+    """Return True if any record in `answers` points to the given
+    `target` and `port`.
+    """
+    return any(
+        record.target == target and record.port == port for record in answers.answer
+    )
+
+
+def _build_record_for_display(
+    record: dns.rdtypes.IN.SRV.SRV,
+    answers: AnswerTuple,
+    answers_list: typing.List[AnswerTuple],
+) -> RecordForDisplay:
+    notes = []
+
+    if answers.tls_type == TlsType.DIRECT_TLS:
+        notes.append(NoteForDisplay(NoteType.DIRECT_TLS, "This is a Direct TLS port."))
+
+    # This note isn't displayed for Direct TLS ports because
+    # Direct TLS isn't formally standardized so there is no
+    # standard port (though, yes, historically 5223 has been
+    # used for client connections and 5270 has been used for
+    # server connections).
+    standard_port = STANDARD_PORTS[(answers.client_or_server, answers.tls_type)]
+    if answers.tls_type == TlsType.STARTTLS and record.port != standard_port:
+        notes.append(NoteForDisplay(NoteType.NON_STANDARD_PORT, "Non-standard port."))
+
+    # Look for the same hostname and port in the responses from the
+    # other queries.
+    for other_answers in answers_list:
+        if other_answers == answers:
+            # This is the same set of answers that this record came
+            # from. No need to check for collisions.
+            continue
+
+        if _has_record_for_host_and_port(other_answers, record.target, record.port):
+            if other_answers.client_or_server == answers.client_or_server:
+                note_type = NoteType.PORT_REUSED_WITH_DIFFERENT_TLS_TYPE
+            elif other_answers.tls_type == answers.tls_type:
+                note_type = NoteType.PORT_REUSED_WITH_DIFFERENT_CLIENT_OR_SERVER_TYPE
+            else:
+                note_type = NoteType.PORT_REUSED_WITH_BOTH_TYPES_DIFFERENT
+            notes.append(
+                NoteForDisplay(
+                    note_type,
+                    f"This host+port is also advertised as a {other_answers.tls_type.value} record for {other_answers.client_or_server.value}s.",
+                )
             )
-        )
 
-    return (rows, note_types_for_these_records)
+    return RecordForDisplay(
+        port=record.port,
+        priority=record.priority,
+        # Remove the trailing period for display.
+        target=str(record.target).rstrip("."),
+        weight=record.weight,
+        notes=notes,
+    )
 
 
-def _get_authoritative_name_servers_for_domain(domain):
+def _get_authoritative_name_servers_for_domain(
+    domain: str,
+) -> typing.Optional[typing.List[str]]:
     """Return a list of strings containing IP addresses of the name servers
     that are considered to be authoritative for the given domain.
 
@@ -211,6 +319,28 @@ def _get_authoritative_name_servers_for_domain(domain):
     return dns_resolver.nameservers
 
 
+def _resolve_srv(
+    dns_resolver: dns.resolver.Resolver, qname: str
+) -> dns.resolver.Answer:
+    try:
+        records = dns_resolver.resolve(qname, rdtype=dns.rdatatype.SRV)
+    except dns.exception.SyntaxError:
+        # TODO: Show "invalid hostname" for this
+        records = []
+    except dns.resolver.NXDOMAIN:
+        records = []
+    except dns.resolver.NoAnswer:
+        # TODO: Show a specific message for this
+        records = []
+    except dns.resolver.NoNameservers:
+        # TODO: Show a specific message for this
+        records = []
+    except dns.resolver.Timeout:
+        # TODO: Show a specific message for this
+        records = []
+    return records
+
+
 class RequestHandler:
     def __init__(self, env, start_response):
         self.env = env
@@ -239,7 +369,7 @@ class RequestHandler:
         self.start_response("200 OK", [("Content-Type", "text/html")])
         return [response_body.encode("utf-8")]
 
-    def _look_up_records(self, hostname):
+    def _look_up_records(self, hostname: str):
         """Looks up the DNS records for the given hostname and returns
         a namedtuple.
         """
@@ -269,75 +399,57 @@ class RequestHandler:
             # TODO: Log something? Show message to user?
             pass
 
-        # Look up records
-        try:
-            client_records = dns_resolver.resolve(
-                "_xmpp-client._tcp.%s" % hostname, rdtype=dns.rdatatype.SRV
+        # Look up records using four queries.
+        answers: typing.List[AnswerTuple] = []
+        answers.append(
+            AnswerTuple(
+                _resolve_srv(dns_resolver, "_xmpp-client._tcp.%s" % hostname),
+                ClientOrServerType.CLIENT,
+                TlsType.STARTTLS,
             )
-        except dns.exception.SyntaxError:
-            # TODO: Show "invalid hostname" for this
-            client_records = []
-        except dns.resolver.NXDOMAIN:
-            client_records = []
-        except dns.resolver.NoAnswer:
-            # TODO: Show a specific message for this
-            client_records = []
-        except dns.resolver.NoNameservers:
-            # TODO: Show a specific message for this
-            client_records = []
-        except dns.resolver.Timeout:
-            # TODO: Show a specific message for this
-            client_records = []
-        client_records_by_endpoint = set(
-            "%s:%s" % (record.target, record.port) for record in client_records
+        )
+        answers.append(
+            AnswerTuple(
+                _resolve_srv(dns_resolver, "_xmpps-client._tcp.%s" % hostname),
+                ClientOrServerType.CLIENT,
+                TlsType.DIRECT_TLS,
+            )
+        )
+        answers.append(
+            AnswerTuple(
+                _resolve_srv(dns_resolver, "_xmpp-server._tcp.%s" % hostname),
+                ClientOrServerType.SERVER,
+                TlsType.STARTTLS,
+            )
+        )
+        answers.append(
+            AnswerTuple(
+                _resolve_srv(dns_resolver, "_xmpps-server._tcp.%s" % hostname),
+                ClientOrServerType.SERVER,
+                TlsType.DIRECT_TLS,
+            )
         )
 
-        try:
-            server_records = dns_resolver.resolve(
-                "_xmpp-server._tcp.%s" % hostname, rdtype=dns.rdatatype.SRV
-            )
-        except dns.exception.SyntaxError:
-            # TODO: Show "invalid hostname" for this
-            server_records = []
-        except dns.resolver.NXDOMAIN:
-            server_records = []
-        except dns.resolver.NoAnswer:
-            # TODO: Show a specific message for this
-            server_records = []
-        except dns.resolver.NoNameservers:
-            # TODO: Show a specific message for this
-            server_records = []
-        except dns.resolver.Timeout:
-            # TODO: Show a specific message for this
-            server_records = []
-        server_records_by_endpoint = set(
-            "%s:%s" % (record.target, record.port) for record in server_records
-        )
+        # Convert the DNS responses into data that's easier to insert
+        # into a template.
+        (
+            client_records_for_display,
+            client_record_note_types_to_footnote_indexes,
+        ) = _build_records_for_display(answers, ClientOrServerType.CLIENT)
+        (
+            server_records_for_display,
+            server_record_note_types_to_footnote_indexes,
+        ) = _build_records_for_display(answers, ClientOrServerType.SERVER)
 
-        if client_records:
-            client_records = _sort_records(client_records)
-            (client_records, client_record_note_types) = _get_records(
-                client_records, 5222, server_records_by_endpoint
-            )
-        else:
-            client_record_note_types = []
-
-        if server_records:
-            server_records = _sort_records(server_records)
-            (server_records, server_record_note_types) = _get_records(
-                server_records, 5269, client_records_by_endpoint
-            )
-        else:
-            server_record_note_types = []
-
+        # Render the template.
         return self.jinja2_env.get_template(
             "index_with_successful_lookup.html.jinja"
         ).render(
             hostname=hostname,
-            client_records=client_records,
-            client_record_note_types=client_record_note_types,
-            server_records=server_records,
-            server_record_note_types=server_record_note_types,
+            client_records=client_records_for_display,
+            client_record_note_types_to_footnote_indexes=client_record_note_types_to_footnote_indexes,
+            server_records=server_records_for_display,
+            server_record_note_types_to_footnote_indexes=server_record_note_types_to_footnote_indexes,
         )
 
 

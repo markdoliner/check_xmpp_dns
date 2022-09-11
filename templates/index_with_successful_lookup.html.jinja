@@ -1,56 +1,63 @@
 {% extends "index_base.html.jinja" %}
 
-{%- macro show_records(description, records, note_types_for_these_records, peer_name, record_type, standard_port) -%}
+{%- macro show_records(description, records, note_types_to_footnote_indexes, peer_name, record_type, standard_port) -%}
 <p class="small">{{ description }}</p>
 
 <table>
-<tr><th>Target</th><th>Port</th><th>Priority</th><th>Weight</th>{%- if note_types_for_these_records -%}<th>Notes</th>{%- endif -%}</tr>
+<tr><th>Target</th><th>Port</th><th>Priority</th><th>Weight</th>{%- if note_types_to_footnote_indexes -%}<th>Notes</th>{%- endif -%}</tr>
 {% for record in records -%}
-{{ show_record(record, note_types_for_these_records) }}
+{{ show_record(record, note_types_to_footnote_indexes) }}
 {% endfor -%}
 </table>
 
-{%- if note_types_for_these_records %}
+{%- if note_types_to_footnote_indexes %}
 <h5>Footnotes</h5>
 {% endif -%}
-{#- Footnotes are numbered according to their index in the
-    note_types_for_these_records list. -#}
-{%- for note_type in note_types_for_these_records %}
-{% set footnote_number = loop.index %}
+{%- for note_type, footnote_number in note_types_to_footnote_indexes.items() %}
 <p class="footnote">
-{%- if note_type == NoteType.CLIENT_SERVER_SHARED_PORT -%}
-{{ footnote_number }}. XMPP clients and servers use different handshakes when connecting to servers, so it is not possible for a single hostname+port combination to accept traffic from clients and other servers (at least, I think that's true&mdash;please <a href="mailto:mark@kingant.net">correct me</a> if I'm wrong!).
+{%- if note_type == NoteType.DIRECT_TLS -%}
+{{ footnote_number }}. The standard method for TLS encryption of XMPP connections is for the connection to begin in plaintext and then switch to TLS via a STARTTLS negotiation. This is described in <a href="https://xmpp.org/rfcs/rfc6120.html#tls">section 5 of RFC 6120</a>. However, some XMPP servers support an alternative method: Clients connect to an alternative port and do TLS negotiation immediately. This is referred to as "Direct TLS." It's incompatible with the STARTTLS approach so a different port must be used (ages ago <a href="https://xmpp.org/extensions/xep-0035.html#sect-idm46289878529488">it may have been common</a> to use 5223 for client connections and 5270 for server connections). <a href="https://xmpp.org/extensions/xep-0368.html">XEP-0368</a> describes the DNS SRV records for Direct TLS ports and how clients should decide which record to use (also see sections 4 and 6 for some advantages of Direct TLS). This is all totally fine&mdash;we just wanted to point it out and share some info.
 {%- elif note_type == NoteType.NON_STANDARD_PORT -%}
-{{ footnote_number }}. The customary port for {{ record_type }} connections is {{ standard_port }}. Using a different port isn't necessarily bad&mdash;{{ peer_name }} that correctly use DNS SRV records will happily connect to this port&mdash;but we thought it was worth pointing out in case it was an accident.
+{{ footnote_number }}. The customary port for {{ record_type }} connections is {{ standard_port }}. Using a different port isn't necessarily bad&mdash;{{ peer_name }} that correctly use DNS SRV records will happily connect to this port&mdash;but we thought it was worth pointing out in case it was an accident. And there may be advantages to using a non-standard port. For example very restrictive firewalls might disallow outbound connections to port 5222 but still allow connections to 443 (also used by https).
+{%- elif note_type == NoteType.PORT_REUSED_WITH_BOTH_TYPES_DIFFERENT -%}
+{{ footnote_number }}. XMPP clients and servers use different handshakes when connecting to servers so it is not possible for a single hostname+port combination to accept traffic from clients and from other servers (at least, I think that's true&mdash;please <a href="mailto:mark@kingant.net">correct me</a> if I'm wrong!). Additionally, the STARTTLS method and the Direct TLS method are not compatible with each other. It is not possible for a single hostname+port to be used for both. One of them should be changed or removed.
+{%- elif note_type == NoteType.PORT_REUSED_WITH_DIFFERENT_CLIENT_OR_SERVER_TYPE -%}
+{{ footnote_number }}. XMPP clients and servers use different handshakes when connecting to servers so it is not possible for a single hostname+port combination to accept traffic from clients and from other servers (at least, I think that's true&mdash;please <a href="mailto:mark@kingant.net">correct me</a> if I'm wrong!).
+{%- elif note_type == NoteType.PORT_REUSED_WITH_DIFFERENT_TLS_TYPE -%}
+{{ footnote_number }}. The STARTTLS method and the Direct TLS method are not compatible with each other. It is not possible for a single hostname+port to be used for both. One of them should be changed or removed.
 {%- endif -%}
 </p>
 {% endfor -%}
 
 {%- endmacro -%}
 
-{%- macro show_record(record, note_types_for_these_records) -%}
+{%- macro show_record(record, note_types_to_footnote_indexes) -%}
 <tr>
 <td>{{ record.target }}</td>
 <td>{{ record.port }}</td>
 <td>{{ record.priority }}</td>
 <td>{{ record.weight }}</td>
-{% if note_types_for_these_records -%}
+{% if note_types_to_footnote_indexes -%}
 <td>
-{%- for (note_type, footnote_number) in record.note_types_and_footnote_numbers %}
-{{ show_note(note_type, footnote_number) }}
+{%- for (note_type, note) in record.notes %}
+{{ show_note(note_type, note, note_types_to_footnote_indexes) }}
 {%- endfor %}
 </td>
 {% endif -%}
 </tr>
 {%- endmacro -%}
 
-{%- macro show_note(note_type, footnote_number) -%}
+{%- macro show_note(note_type, note, note_types_to_footnote_indexes) -%}
 <div class="note">
-{%- if note_type == NoteType.CLIENT_SERVER_SHARED_PORT -%}
-<span class="red">ERROR</span>: This host+port is listed for both client and server records.<sup>{{ footnote_number }}
-{%- elif note_type == NoteType.NON_STANDARD_PORT -%}
-Non-standard port.<sup>{{ footnote_number }}</sup>
+{%- if note_type in [
+        NoteType.PORT_REUSED_WITH_BOTH_TYPES_DIFFERENT,
+        NoteType.PORT_REUSED_WITH_DIFFERENT_CLIENT_OR_SERVER_TYPE,
+        NoteType.PORT_REUSED_WITH_DIFFERENT_TLS_TYPE,
+    ]
+-%}
+<span class="red">ERROR:</span>
 {%- endif -%}
+{{- note -}}<sup>{{- note_types_to_footnote_indexes[note_type] -}}
 </div>
 {%- endmacro -%}
 
@@ -61,7 +68,7 @@ Non-standard port.<sup>{{ footnote_number }}</sup>
 {% if client_records -%}
 {{ show_records('XMPP clients will use these when logging in.',
                 client_records,
-                client_record_note_types,
+                client_record_note_types_to_footnote_indexes,
                 'clients',
                 'client-to-server',
                 5222) -}}
@@ -75,7 +82,7 @@ Non-standard port.<sup>{{ footnote_number }}</sup>
 {% if server_records -%}
 {{ show_records('Other XMPP servers will use these when peering with this domain.',
                 server_records,
-                server_record_note_types,
+                server_record_note_types_to_footnote_indexes,
                 'servers',
                 'server-to-server',
                 5269) }}
