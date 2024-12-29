@@ -46,7 +46,6 @@
 
 # import gevent.monkey; gevent.monkey.patch_all()
 
-import cgi
 import enum
 import logging
 import typing
@@ -356,9 +355,14 @@ class RequestHandler:
         self.jinja2_env.globals = dict(NoteType=NoteType)
 
     def handle(self):
-        form = cgi.FieldStorage(environ=self.env)
+        query_args = urllib.parse.parse_qsl(self.env["QUERY_STRING"])
 
-        hostname = form["h"].value.strip() if "h" in form else None
+        hostname = None
+        for key, value in query_args:
+            if key == "h":
+                hostname = value.strip()
+                break
+
         if hostname:
             response_body = self._look_up_records(hostname)
         else:
