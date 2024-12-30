@@ -53,9 +53,9 @@ import urllib.parse
 
 # import cgitb; cgitb.enable()
 import dns.exception
-import dns.resolver
 import dns.rdatatype
 import dns.rdtypes.IN.SRV
+import dns.resolver
 import dns.rrset
 import jinja2
 
@@ -80,7 +80,7 @@ class TlsType(enum.Enum):
     DIRECT_TLS = "Direct TLS"
 
 
-STANDARD_PORTS: typing.Dict[typing.Tuple[ClientOrServerType, TlsType], int] = {
+STANDARD_PORTS: dict[tuple[ClientOrServerType, TlsType], int] = {
     (ClientOrServerType.CLIENT, TlsType.STARTTLS): 5222,
     (ClientOrServerType.CLIENT, TlsType.DIRECT_TLS): 5223,
     (ClientOrServerType.SERVER, TlsType.STARTTLS): 5269,
@@ -113,12 +113,12 @@ class RecordForDisplay(typing.NamedTuple):
     priority: int
     target: str
     weight: int
-    notes: typing.List[NoteForDisplay]
+    notes: list[NoteForDisplay]
 
 
 def _sort_records_for_display(
-    records: typing.List[RecordForDisplay],
-) -> typing.List[RecordForDisplay]:
+    records: list[RecordForDisplay],
+) -> list[RecordForDisplay]:
     return sorted(
         records,
         key=lambda record: "%10d %10d %50s %d"
@@ -127,8 +127,8 @@ def _sort_records_for_display(
 
 
 def _build_records_for_display(
-    answers_list: typing.List[AnswerTuple], client_or_server: ClientOrServerType
-) -> typing.Tuple[typing.List[RecordForDisplay], typing.Dict[NoteType, int]]:
+    answers_list: list[AnswerTuple], client_or_server: ClientOrServerType
+) -> tuple[list[RecordForDisplay], dict[NoteType, int]]:
     records_for_display = []
 
     for answers in answers_list:
@@ -142,7 +142,7 @@ def _build_records_for_display(
 
     # dict is used here rather than set so that order is preserved.
     # (As of Python 3.7 according to https://stackoverflow.com/a/39980744/1634007)
-    note_types_used_by_these_records: typing.Dict[NoteType, None] = {
+    note_types_used_by_these_records: dict[NoteType, None] = {
         note.note_type: None
         for record in sorted_records_for_display
         for note in record.notes
@@ -170,7 +170,7 @@ def _has_record_for_host_and_port(answers: AnswerTuple, target: str, port: int) 
 def _build_record_for_display(
     record: dns.rdtypes.IN.SRV.SRV,
     answers: AnswerTuple,
-    answers_list: typing.List[AnswerTuple],
+    answers_list: list[AnswerTuple],
 ) -> RecordForDisplay:
     notes = []
 
@@ -220,7 +220,7 @@ def _build_record_for_display(
 
 def _get_authoritative_name_servers_for_domain(
     domain: str,
-) -> typing.Optional[typing.List[str]]:
+) -> list[str] | None:
     """Return a list of strings containing IP addresses of the name servers
     that are considered to be authoritative for the given domain.
 
@@ -404,7 +404,7 @@ class RequestHandler:
             pass
 
         # Look up records using four queries.
-        answers: typing.List[AnswerTuple] = []
+        answers: list[AnswerTuple] = []
         answers.append(
             AnswerTuple(
                 _resolve_srv(dns_resolver, "_xmpp-client._tcp.%s" % hostname),
