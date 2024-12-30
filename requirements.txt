@@ -1,6 +1,0 @@
-dnspython
-gevent
-isort
-jinja2
-pycodestyle
-pylint

@@ -28,11 +28,14 @@ Dependencies
 
 Local development
 =================
-It's easy to run the application locally:
+You must install Poetry first. The steps for doing so are
+system-dependent. One option on macOS is "brew install poetry"
+
+Then:
 ```
 virtualenv venv
 . venv/bin/activate
-pip install -r requirements.txt
+poetry install --no-root --with=dev
 ./check_xmpp_dns.py
 ```
 Then open http://localhost:8080/ in a web browser.
@@ -41,7 +44,6 @@ Alternatively you can use gunicorn with --reload to restart the server
 automatically when the code changes:
 ```
 . venv/bin/activate
-pip install gunicorn
 ./venv/bin/gunicorn --bind 127.0.0.1:8080 --reload check_xmpp_dns:application
 ```
 
