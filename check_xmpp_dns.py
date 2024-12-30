@@ -354,7 +354,7 @@ class RequestHandler:
         )
         self.jinja2_env.globals = dict(NoteType=NoteType)
 
-    def handle(self):
+    def handle(self) -> list[bytes]:
         query_args = urllib.parse.parse_qsl(self.env["QUERY_STRING"])
 
         hostname = None
@@ -373,7 +373,7 @@ class RequestHandler:
         self.start_response("200 OK", [("Content-Type", "text/html")])
         return [response_body.encode("utf-8")]
 
-    def _look_up_records(self, hostname: str):
+    def _look_up_records(self, hostname: str) -> str:
         """Looks up the DNS records for the given hostname and returns
         a namedtuple.
         """
@@ -457,7 +457,7 @@ class RequestHandler:
         )
 
 
-def application(env, start_response):
+def application(env, start_response) -> list[bytes]:
     """WSGI application entry point."""
 
     try:
