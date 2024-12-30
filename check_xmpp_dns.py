@@ -80,7 +80,7 @@ class TlsType(enum.Enum):
     DIRECT_TLS = "Direct TLS"
 
 
-STANDARD_PORTS: dict[tuple[ClientOrServerType, TlsType], int] = {
+STANDARD_PORTS = {
     (ClientOrServerType.CLIENT, TlsType.STARTTLS): 5222,
     (ClientOrServerType.CLIENT, TlsType.DIRECT_TLS): 5223,
     (ClientOrServerType.SERVER, TlsType.STARTTLS): 5269,
@@ -142,7 +142,7 @@ def _build_records_for_display(
 
     # dict is used here rather than set so that order is preserved.
     # (As of Python 3.7 according to https://stackoverflow.com/a/39980744/1634007)
-    note_types_used_by_these_records: dict[NoteType, None] = {
+    note_types_used_by_these_records = {
         note.note_type: None
         for record in sorted_records_for_display
         for note in record.notes
@@ -172,7 +172,7 @@ def _build_record_for_display(
     answers: AnswerTuple,
     answers_list: list[AnswerTuple],
 ) -> RecordForDisplay:
-    notes = []
+    notes = list[NoteForDisplay]()
 
     if answers.tls_type == TlsType.DIRECT_TLS:
         notes.append(NoteForDisplay(NoteType.DIRECT_TLS, "This is a Direct TLS port."))
@@ -404,7 +404,7 @@ class RequestHandler:
             pass
 
         # Look up records using four queries.
-        answers: list[AnswerTuple] = []
+        answers = list[AnswerTuple]()
         answers.append(
             AnswerTuple(
                 _resolve_srv(dns_resolver, "_xmpp-client._tcp.%s" % hostname),
