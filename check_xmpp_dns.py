@@ -3,7 +3,7 @@
 # Licensed as follows (this is the 2-clause BSD license, aka
 # "Simplified BSD License" or "FreeBSD License"):
 #
-# Copyright (c) 2011-2014,2019,2022, Mark Doliner
+# Copyright (c) 2011-2014,2019,2022,2024 Mark Doliner
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -46,18 +46,26 @@
 
 # import gevent.monkey; gevent.monkey.patch_all()
 
+import collections.abc
+import contextlib
 import enum
 import logging
 import typing
 import urllib.parse
 
 # import cgitb; cgitb.enable()
+import anyio
+import dns.asyncresolver
 import dns.exception
 import dns.rdatatype
 import dns.rdtypes.IN.SRV
-import dns.resolver
-import dns.rrset
 import jinja2
+import starlette.applications
+import starlette.requests
+import starlette.responses
+import starlette.routing
+
+jinja2_env: jinja2.Environment | None = None
 
 
 @enum.unique
@@ -114,6 +122,21 @@ class RecordForDisplay(typing.NamedTuple):
     target: str
     weight: int
     notes: list[NoteForDisplay]
+
+
+def _get_jinja2_env() -> jinja2.Environment:
+    global jinja2_env
+
+    if jinja2_env is None:
+        jinja2_env = jinja2.Environment(
+            autoescape=True,
+            enable_async=True,
+            loader=jinja2.FileSystemLoader("templates"),
+            undefined=jinja2.StrictUndefined,
+        )
+        jinja2_env.globals = dict(NoteType=NoteType)
+
+    return jinja2_env
 
 
 def _sort_records_for_display(
@@ -218,9 +241,7 @@ def _build_record_for_display(
     )
 
 
-def _get_authoritative_name_servers_for_domain(
-    domain: str,
-) -> list[str] | None:
+async def _get_authoritative_name_servers_for_domain(domain: str) -> list[str] | None:
     """Return a list of strings containing IP addresses of the name servers
     that are considered to be authoritative for the given domain.
 
@@ -229,7 +250,7 @@ def _get_authoritative_name_servers_for_domain(
     """
 
     # Create a DNS resolver to use for these requests
-    dns_resolver = dns.resolver.Resolver()
+    dns_resolver = dns.asyncresolver.Resolver()
 
     # Set a 2.5 second timeout on the resolver
     dns_resolver.lifetime = 2.5
@@ -244,7 +265,7 @@ def _get_authoritative_name_servers_for_domain(
     for i in range(len(pieces) - 1, 0, -1):
         broader_domain = ".".join(pieces[i - 1 :])
         try:
-            answer = dns_resolver.resolve(broader_domain, dns.rdatatype.NS)
+            answer = await dns_resolver.resolve(broader_domain, dns.rdatatype.NS)
         except dns.exception.SyntaxError:
             # TODO: Show "invalid hostname" for this?
             return None
@@ -276,7 +297,7 @@ def _get_authoritative_name_servers_for_domain(
                 # TODO: Don't do this if the nameserver we just queried gave us
                 # an additional record that includes the IP.
                 try:
-                    answer2 = dns_resolver.resolve(record.to_text())
+                    answer2 = await dns_resolver.resolve(record.to_text())
                 except dns.exception.SyntaxError:
                     # TODO: Show "invalid hostname" for this?
                     return None
@@ -318,11 +339,11 @@ def _get_authoritative_name_servers_for_domain(
     return dns_resolver.nameservers
 
 
-def _resolve_srv(
-    dns_resolver: dns.resolver.Resolver, qname: str
+async def _resolve_srv(
+    dns_resolver: dns.asyncresolver.Resolver, qname: str
 ) -> dns.resolver.Answer:
     try:
-        records = dns_resolver.resolve(qname, rdtype=dns.rdatatype.SRV)
+        records = await dns_resolver.resolve(qname, rdtype=dns.rdatatype.SRV)
     except dns.exception.SyntaxError:
         # TODO: Show "invalid hostname" for this
         records = []
@@ -340,136 +361,135 @@ def _resolve_srv(
     return records
 
 
-class RequestHandler:
-    def __init__(self, env, start_response):
-        self.env = env
-        self.start_response = start_response
+async def _look_up_records(hostname: str) -> str:
+    """Looks up the DNS records for the given hostname and returns
+    a namedtuple.
+    """
+    # Record domain name
+    async with await anyio.open_file("requestledger.txt", "a") as f:
+        await f.write("%s\n" % urllib.parse.quote(hostname))
 
-        # TODO: Using a persistent object for this would perform better.
-        # Might need to use gevent.local somehow.
-        self.jinja2_env = jinja2.Environment(
-            autoescape=True,
-            loader=jinja2.FileSystemLoader("templates"),
-            undefined=jinja2.StrictUndefined,
-        )
-        self.jinja2_env.globals = dict(NoteType=NoteType)
-
-    def handle(self) -> list[bytes]:
-        query_args = urllib.parse.parse_qsl(self.env["QUERY_STRING"])
-
-        hostname = None
-        for key, value in query_args:
-            if key == "h":
-                hostname = value.strip()
-                break
-
-        if hostname:
-            response_body = self._look_up_records(hostname)
-        else:
-            response_body = self.jinja2_env.get_template(
-                "index_base.html.jinja"
-            ).render(hostname="")
-
-        self.start_response("200 OK", [("Content-Type", "text/html")])
-        return [response_body.encode("utf-8")]
-
-    def _look_up_records(self, hostname: str) -> str:
-        """Looks up the DNS records for the given hostname and returns
-        a namedtuple.
-        """
-        # Record domain name
-        open("requestledger.txt", "a").write("%s\n" % urllib.parse.quote(hostname))
-
-        # Sanity check hostname
-        if hostname.find("..") != -1:
-            return self.jinja2_env.get_template(
-                "index_with_lookup_error.html.jinja"
-            ).render(hostname=hostname, error_message="Invalid hostname")
-
-        # Create a DNS resolver to use for this request
-        dns_resolver = dns.resolver.Resolver()
-
-        # Set a 2.5 second timeout on the resolver
-        dns_resolver.lifetime = 2.5
-
-        # Look up the list of authoritative name servers for this domain and query
-        # them directly when looking up XMPP SRV records. We do this to avoid any
-        # potential caching from intermediate name servers.
-        new_nameservers = _get_authoritative_name_servers_for_domain(hostname)
-        if new_nameservers:
-            dns_resolver.nameservers = new_nameservers
-        else:
-            # Couldn't determine authoritative name servers for domain.
-            # TODO: Log something? Show message to user?
-            pass
-
-        # Look up records using four queries.
-        answers = list[AnswerTuple]()
-        answers.append(
-            AnswerTuple(
-                _resolve_srv(dns_resolver, "_xmpp-client._tcp.%s" % hostname),
-                ClientOrServerType.CLIENT,
-                TlsType.STARTTLS,
-            )
-        )
-        answers.append(
-            AnswerTuple(
-                _resolve_srv(dns_resolver, "_xmpps-client._tcp.%s" % hostname),
-                ClientOrServerType.CLIENT,
-                TlsType.DIRECT_TLS,
-            )
-        )
-        answers.append(
-            AnswerTuple(
-                _resolve_srv(dns_resolver, "_xmpp-server._tcp.%s" % hostname),
-                ClientOrServerType.SERVER,
-                TlsType.STARTTLS,
-            )
-        )
-        answers.append(
-            AnswerTuple(
-                _resolve_srv(dns_resolver, "_xmpps-server._tcp.%s" % hostname),
-                ClientOrServerType.SERVER,
-                TlsType.DIRECT_TLS,
-            )
+    # Sanity check hostname
+    if hostname.find("..") != -1:
+        return await (
+            _get_jinja2_env()
+            .get_template("index_with_lookup_error.html.jinja")
+            .render_async(hostname=hostname, error_message="Invalid hostname")
         )
 
-        # Convert the DNS responses into data that's easier to insert
-        # into a template.
-        (
-            client_records_for_display,
-            client_record_note_types_to_footnote_indexes,
-        ) = _build_records_for_display(answers, ClientOrServerType.CLIENT)
-        (
-            server_records_for_display,
-            server_record_note_types_to_footnote_indexes,
-        ) = _build_records_for_display(answers, ClientOrServerType.SERVER)
+    # Create a DNS resolver to use for this request
+    dns_resolver = dns.asyncresolver.Resolver()
 
-        # Render the template.
-        return self.jinja2_env.get_template(
-            "index_with_successful_lookup.html.jinja"
-        ).render(
+    # Set a 2.5 second timeout on the resolver
+    dns_resolver.lifetime = 2.5
+
+    # Look up the list of authoritative name servers for this domain and query
+    # them directly when looking up XMPP SRV records. We do this to avoid any
+    # potential caching from intermediate name servers.
+    new_nameservers = await _get_authoritative_name_servers_for_domain(hostname)
+    if new_nameservers:
+        dns_resolver.nameservers = new_nameservers
+    else:
+        # Couldn't determine authoritative name servers for domain.
+        # TODO: Log something? Show message to user?
+        pass
+
+    # Look up records using four queries.
+    answers = list[AnswerTuple]()
+    answers.append(
+        AnswerTuple(
+            await _resolve_srv(dns_resolver, "_xmpp-client._tcp.%s" % hostname),
+            ClientOrServerType.CLIENT,
+            TlsType.STARTTLS,
+        )
+    )
+    answers.append(
+        AnswerTuple(
+            await _resolve_srv(dns_resolver, "_xmpps-client._tcp.%s" % hostname),
+            ClientOrServerType.CLIENT,
+            TlsType.DIRECT_TLS,
+        )
+    )
+    answers.append(
+        AnswerTuple(
+            await _resolve_srv(dns_resolver, "_xmpp-server._tcp.%s" % hostname),
+            ClientOrServerType.SERVER,
+            TlsType.STARTTLS,
+        )
+    )
+    answers.append(
+        AnswerTuple(
+            await _resolve_srv(dns_resolver, "_xmpps-server._tcp.%s" % hostname),
+            ClientOrServerType.SERVER,
+            TlsType.DIRECT_TLS,
+        )
+    )
+
+    # Convert the DNS responses into data that's easier to insert
+    # into a template.
+    (
+        client_records_for_display,
+        client_record_note_types_to_footnote_indexes,
+    ) = _build_records_for_display(answers, ClientOrServerType.CLIENT)
+    (
+        server_records_for_display,
+        server_record_note_types_to_footnote_indexes,
+    ) = _build_records_for_display(answers, ClientOrServerType.SERVER)
+
+    # Render the template.
+    return await (
+        _get_jinja2_env()
+        .get_template("index_with_successful_lookup.html.jinja")
+        .render_async(
             hostname=hostname,
             client_records=client_records_for_display,
             client_record_note_types_to_footnote_indexes=client_record_note_types_to_footnote_indexes,
             server_records=server_records_for_display,
             server_record_note_types_to_footnote_indexes=server_record_note_types_to_footnote_indexes,
         )
+    )
 
 
-def application(env, start_response) -> list[bytes]:
-    """WSGI application entry point."""
-
+async def _root(request: starlette.requests.Request) -> starlette.responses.Response:
     try:
-        return RequestHandler(env, start_response).handle()
+        hostname = request.query_params.get("h")
+        if hostname:
+            response_body = await _look_up_records(hostname)
+        else:
+            response_body = await (
+                _get_jinja2_env()
+                .get_template("index_base.html.jinja")
+                .render_async(hostname="")
+            )
+
+        return starlette.responses.Response(response_body)
     except Exception:
-        logging.exception("Unknown error handling request. env=%s", env)
+        logging.exception("Unknown error handling request.")
         raise
+
+
+@contextlib.asynccontextmanager
+async def _lifespan(
+    _app: starlette.applications.Starlette,
+) -> collections.abc.AsyncGenerator[None, None]:
+    # Initialize the jinja2_env global.
+    _get_jinja2_env()
+
+    yield
+
+
+def application() -> starlette.applications.Starlette:
+    return starlette.applications.Starlette(
+        lifespan=_lifespan,
+        routes=[
+            starlette.routing.Route("/", _root),
+        ],
+    )
 
 
 if __name__ == "__main__":
     logging.basicConfig(filename="log")
 
-    import gevent.pywsgi
+    import uvicorn
 
-    gevent.pywsgi.WSGIServer(("", 8080), application=application).serve_forever()
+    uvicorn.run(application, port=8080, server_header=False, log_level="info")

@@ -44,7 +44,7 @@ Alternatively you can use gunicorn with --reload to restart the server
 automatically when the code changes:
 ```
 . venv/bin/activate
-./venv/bin/gunicorn --bind 127.0.0.1:8080 --reload check_xmpp_dns:application
+./venv/bin/uvicorn --host 127.0.0.1 --port 8080 --no-server-header --reload --factory check_xmpp_dns:application
 ```
 
 
