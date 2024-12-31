@@ -42,7 +42,7 @@ Then open http://localhost:8000/ in a web browser.
 
 I run with slightly different parameters in production:
 ```
-./venv/bin/uvicorn --factory check_xmpp_dns:application --host 127.0.0.1 --no-server-header --root-path check_xmpp_dns
+./venv/bin/uvicorn --factory check_xmpp_dns:application --host 127.0.0.1 --no-server-header --root-path /check_xmpp_dns
 ```
 
 
