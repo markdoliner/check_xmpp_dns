@@ -487,6 +487,8 @@ async def _root(request: starlette.requests.Request) -> starlette.responses.Resp
 async def _lifespan(
     _app: starlette.applications.Starlette,
 ) -> collections.abc.AsyncGenerator[None, None]:
+    logging.basicConfig(filename="log")
+
     # Initialize the jinja2_env global.
     _get_jinja2_env()
 
@@ -500,11 +502,3 @@ def application() -> starlette.applications.Starlette:
             starlette.routing.Route("/", _root),
         ],
     )
-
-
-if __name__ == "__main__":
-    logging.basicConfig(filename="log")
-
-    import uvicorn
-
-    uvicorn.run(application, port=8080, server_header=False, log_level="info")

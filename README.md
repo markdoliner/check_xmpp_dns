@@ -36,15 +36,13 @@ Then:
 virtualenv venv
 . venv/bin/activate
 poetry install --no-root --with=dev
-./check_xmpp_dns.py
+./venv/bin/uvicorn --factory check_xmpp_dns:application --no-server-header --reload
 ```
-Then open http://localhost:8080/ in a web browser.
+Then open http://localhost:8000/ in a web browser.
 
-Alternatively you can use gunicorn with --reload to restart the server
-automatically when the code changes:
+I run with slightly different parameters in production:
 ```
-. venv/bin/activate
-./venv/bin/uvicorn --host 127.0.0.1 --port 8080 --no-server-header --reload --factory check_xmpp_dns:application
+./venv/bin/uvicorn --factory check_xmpp_dns:application --host 127.0.0.1 --no-server-header --root-path check_xmpp_dns
 ```
 
 
