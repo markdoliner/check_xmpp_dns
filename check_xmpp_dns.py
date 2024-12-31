@@ -59,6 +59,7 @@ import dns.asyncresolver
 import dns.exception
 import dns.rdatatype
 import dns.rdtypes.IN.SRV
+import dns.resolver
 import jinja2
 import starlette.applications
 import starlette.requests
