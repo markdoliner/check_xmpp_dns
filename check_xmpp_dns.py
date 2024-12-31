@@ -57,6 +57,7 @@ import urllib.parse
 import anyio
 import dns.asyncresolver
 import dns.exception
+import dns.rdata
 import dns.rdatatype
 import dns.rdtypes.IN.SRV
 import dns.resolver
@@ -66,7 +67,7 @@ import starlette.requests
 import starlette.responses
 import starlette.routing
 
-jinja2_env: jinja2.Environment | None = None
+_jinja2_env: jinja2.Environment | None = None
 
 
 @enum.unique
@@ -126,18 +127,18 @@ class RecordForDisplay(typing.NamedTuple):
 
 
 def _get_jinja2_env() -> jinja2.Environment:
-    global jinja2_env
+    global _jinja2_env
 
-    if jinja2_env is None:
-        jinja2_env = jinja2.Environment(
+    if _jinja2_env is None:
+        _jinja2_env = jinja2.Environment(
             autoescape=True,
             enable_async=True,
             loader=jinja2.FileSystemLoader("templates"),
             undefined=jinja2.StrictUndefined,
         )
-        jinja2_env.globals = dict(NoteType=NoteType)
+        _jinja2_env.globals = dict(NoteType=NoteType)
 
-    return jinja2_env
+    return _jinja2_env
 
 
 def _sort_records_for_display(
@@ -150,14 +151,26 @@ def _sort_records_for_display(
     )
 
 
+def _assert_srv_records(
+    answer: dns.resolver.Answer,
+) -> collections.abc.Iterator[dns.rdtypes.IN.SRV.SRV]:
+    """Return an iterator through the Answer's records, asserting that they're all SRV records."""
+    for record in answer:
+        if not isinstance(record, dns.rdtypes.IN.SRV.SRV):
+            raise AssertionError(
+                f"record type should have been dns.rdtypes.IN.SRV.SRV but was {type(record)}"
+            )
+        yield record
+
+
 def _build_records_for_display(
     answers_list: list[AnswerTuple], client_or_server: ClientOrServerType
 ) -> tuple[list[RecordForDisplay], dict[NoteType, int]]:
-    records_for_display = []
+    records_for_display = list[RecordForDisplay]()
 
     for answers in answers_list:
         if answers.client_or_server == client_or_server:
-            for record in answers.answer:
+            for record in _assert_srv_records(answers.answer):
                 records_for_display.append(
                     _build_record_for_display(record, answers, answers_list)
                 )
@@ -187,7 +200,8 @@ def _has_record_for_host_and_port(answers: AnswerTuple, target: str, port: int) 
     `target` and `port`.
     """
     return any(
-        record.target == target and record.port == port for record in answers.answer
+        record.target == target and record.port == port
+        for record in _assert_srv_records(answers.answer)
     )
 
 
