@@ -477,7 +477,9 @@ async def _root(request: starlette.requests.Request) -> starlette.responses.Resp
                 .render_async(hostname="")
             )
 
-        return starlette.responses.Response(response_body)
+        return starlette.responses.Response(
+            response_body, headers={"Cache-Control": "no-cache"}
+        )
     except Exception:
         logging.exception("Unknown error handling request.")
         raise
