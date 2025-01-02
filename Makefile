@@ -6,8 +6,9 @@ install-deps:
 
 .PHONY: check
 check:
-	ruff format check_xmpp_dns.py
-	ruff check --fix check_xmpp_dns.py
+	poetry run ruff format check_xmpp_dns.py
+	poetry run ruff check --fix check_xmpp_dns.py
+	poetry run mypy check_xmpp_dns.py
 
 .PHONY: run-local
 run-local:
