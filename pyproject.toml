@@ -2,6 +2,7 @@
 name = "check-xmpp-dns"
 description = "Python cgi script that prints the DNS SRV records used for XMPP."
 readme = "README.md"
+requires-python = ">=3.10"
 
 [tool.poetry]
 package-mode = false
@@ -23,16 +24,45 @@ line-length = 120
 
 [tool.ruff.lint]
 select = [
-    "A",  # flake8-builtins
-    "ASYNC",  # flake8-async
-    "B",  # flake8-butbear
-    "BLE",  # flake8-blind-except
-    "C4",  # flake8-comprehensions
-    "COM818",  # flake8-commas trailing-comma-on-bare-tuple
-    "COM819",  # flake8-commas prohibited-trailing-comma
-    "E",  # pycodestyle
-    "F",  # Pyflakes
-    "I",  # Sort imports
-    "S",  # flake8-bandit
-    "W",  # pycodestyle
+    "F",
+    "E",
+    "W",
+    "I",
+    "ASYNC",
+    "S",
+    "BLE",
+    "B",
+    "A",
+    "COM818",
+    "COM819",
+    "C4",
+    "T10",
+    "EM",
+    "EXE",
+    "FA",
+    "ISC002",
+    "ISC003",
+    "ICN",
+    "LOG",
+    "G",
+    "INP",
+    "PIE",
+    "T20",
+    "PYI",
+    "Q",
+    "RSE",
+    "RET",
+    "SLF",
+    "SLOT",
+    "SIM",
+    "TID",
+    "TC",
+    "INT",
+    "ARG",
+    "PTH",
+    "PLC",
+    "PLE",
+    "PERF",
+    "FURB",
+    "RUF",
 ]

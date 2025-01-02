@@ -153,7 +153,8 @@ def _assert_srv_records(answer: dns.resolver.Answer) -> collections.abc.Iterator
     """Return an iterator through the Answer's records, asserting that they're all SRV records."""
     for record in answer:
         if not isinstance(record, dns.rdtypes.IN.SRV.SRV):
-            raise AssertionError(f"record type should have been dns.rdtypes.IN.SRV.SRV but was {type(record)}")
+            message = f"record type should have been dns.rdtypes.IN.SRV.SRV but was {type(record)}"
+            raise AssertionError(message)
         yield record
 
 
