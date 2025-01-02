@@ -228,7 +228,8 @@ def _build_record_for_display(
             notes.append(
                 NoteForDisplay(
                     note_type,
-                    f"This host+port is also advertised as a {other_answers.tls_type.value} record for {other_answers.client_or_server.value}s.",
+                    f"This host+port is also advertised as a {other_answers.tls_type.value} "
+                    f"record for {other_answers.client_or_server.value}s.",
                 )
             )
 
