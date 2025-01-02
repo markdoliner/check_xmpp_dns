@@ -1,0 +1,38 @@
+name: Lint, check formatting, and build Docker image
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    - name: Install dependencies
+      run: |
+        pipx install poetry==1.8.5
+        poetry install --no-root --with=dev
+
+    - name: Lint code with Ruff
+      run: poetry run ruff check --output-format=github check_xmpp_dns.py
+
+    - name: Check code formatting with Ruff
+      run: poetry run ruff format --diff check_xmpp_dns.py
+
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag check-xmpp-dns:$(date +%s)
+
+    # TODO: Publish the Docker image. See
+    # https://docs.github.com/en/actions/use-cases-and-examples/publishing-packages/publishing-docker-images
