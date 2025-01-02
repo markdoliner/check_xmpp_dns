@@ -136,7 +136,7 @@ def _get_jinja2_env() -> jinja2.Environment:
             loader=jinja2.FileSystemLoader("templates"),
             undefined=jinja2.StrictUndefined,
         )
-        _jinja2_env.globals = dict(NoteType=NoteType)
+        _jinja2_env.globals = {NoteType: NoteType}
 
     return _jinja2_env
 

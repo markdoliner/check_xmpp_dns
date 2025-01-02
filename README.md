@@ -37,6 +37,11 @@ make run-local
 ```
 Then open http://localhost:8000/ in a web browser.
 
+To check code style:
+```
+make check
+```
+
 
 Running in Production
 =====================
