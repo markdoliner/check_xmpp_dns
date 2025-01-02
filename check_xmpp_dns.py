@@ -381,7 +381,9 @@ async def _look_up_records(hostname: str) -> str:
     a namedtuple.
     """
     # Record domain name
-    async with await anyio.open_file("requestledger.txt", "a") as f:
+    async with await anyio.open_file(
+        "/var/log/check-xmpp-dns/requestledger.txt", "a"
+    ) as f:
         await f.write("%s\n" % urllib.parse.quote(hostname))
 
     # Sanity check hostname
@@ -489,8 +491,6 @@ async def _root(request: starlette.requests.Request) -> starlette.responses.Resp
 async def _lifespan(
     _app: starlette.applications.Starlette,
 ) -> collections.abc.AsyncGenerator[None, None]:
-    logging.basicConfig(filename="log")
-
     # Initialize the jinja2_env global.
     _get_jinja2_env()
 

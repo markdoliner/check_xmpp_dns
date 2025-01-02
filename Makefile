@@ -2,17 +2,21 @@
 
 .PHONY: install-deps
 install-deps:
-	pip install --requirement requirements.txt
-
-.PHONY: sort-imports
-sort-imports:
-	isort check_xmpp_dns.py
+	poetry install --no-root --with=dev
 
 .PHONY: check
 check:
-	@if ! isort --check-only check_xmpp_dns.py; then \
-		>&2 echo "\nRun 'make sort-imports' to fix.\n"; \
-		exit 1; \
-	fi
-	pycodestyle check_xmpp_dns.py
-	pylint check_xmpp_dns.py
+	ruff format check_xmpp_dns.py
+	ruff check --fix check_xmpp_dns.py
+
+.PHONY: run-local
+run-local:
+	poetry run uvicorn --factory --no-server-header --reload check_xmpp_dns:application
+
+.PHONY: docker
+docker:
+	docker build --tag=check-xmpp-dns .
+
+.PHONY: run-docker
+run-docker: docker
+	docker run --name check-xmpp-dns --publish=127.0.0.1:8000:8000/tcp --rm check-xmpp-dns
