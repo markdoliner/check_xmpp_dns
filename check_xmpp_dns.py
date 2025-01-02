@@ -141,9 +141,7 @@ def _get_jinja2_env() -> jinja2.Environment:
     return _jinja2_env
 
 
-def _sort_records_for_display(
-    records: list[RecordForDisplay],
-) -> list[RecordForDisplay]:
+def _sort_records_for_display(records: list[RecordForDisplay]) -> list[RecordForDisplay]:
     return sorted(
         records,
         key=lambda record: "%10d %10d %50s %d"
@@ -151,15 +149,11 @@ def _sort_records_for_display(
     )
 
 
-def _assert_srv_records(
-    answer: dns.resolver.Answer,
-) -> collections.abc.Iterator[dns.rdtypes.IN.SRV.SRV]:
+def _assert_srv_records(answer: dns.resolver.Answer) -> collections.abc.Iterator[dns.rdtypes.IN.SRV.SRV]:
     """Return an iterator through the Answer's records, asserting that they're all SRV records."""
     for record in answer:
         if not isinstance(record, dns.rdtypes.IN.SRV.SRV):
-            raise AssertionError(
-                f"record type should have been dns.rdtypes.IN.SRV.SRV but was {type(record)}"
-            )
+            raise AssertionError(f"record type should have been dns.rdtypes.IN.SRV.SRV but was {type(record)}")
         yield record
 
 
@@ -171,22 +165,17 @@ def _build_records_for_display(
     for answers in answers_list:
         if answers.client_or_server == client_or_server:
             for record in _assert_srv_records(answers.answer):
-                records_for_display.append(
-                    _build_record_for_display(record, answers, answers_list)
-                )
+                records_for_display.append(_build_record_for_display(record, answers, answers_list))
 
     sorted_records_for_display = _sort_records_for_display(records_for_display)
 
     # dict is used here rather than set so that order is preserved.
     # (As of Python 3.7 according to https://stackoverflow.com/a/39980744/1634007)
     note_types_used_by_these_records = {
-        note.note_type: None
-        for record in sorted_records_for_display
-        for note in record.notes
+        note.note_type: None for record in sorted_records_for_display for note in record.notes
     }
     note_types_to_footnote_indexes = {
-        note_type: index + 1
-        for index, note_type in enumerate(note_types_used_by_these_records)
+        note_type: index + 1 for index, note_type in enumerate(note_types_used_by_these_records)
     }
 
     return (
@@ -199,10 +188,7 @@ def _has_record_for_host_and_port(answers: AnswerTuple, target: str, port: int) 
     """Return True if any record in `answers` points to the given
     `target` and `port`.
     """
-    return any(
-        record.target == target and record.port == port
-        for record in _assert_srv_records(answers.answer)
-    )
+    return any(record.target == target and record.port == port for record in _assert_srv_records(answers.answer))
 
 
 def _build_record_for_display(
@@ -354,9 +340,7 @@ async def _get_authoritative_name_servers_for_domain(domain: str) -> list[str] |
     return dns_resolver.nameservers
 
 
-async def _resolve_srv(
-    dns_resolver: dns.asyncresolver.Resolver, qname: str
-) -> dns.resolver.Answer:
+async def _resolve_srv(dns_resolver: dns.asyncresolver.Resolver, qname: str) -> dns.resolver.Answer:
     try:
         records = await dns_resolver.resolve(qname, rdtype=dns.rdatatype.SRV)
     except dns.exception.SyntaxError:
@@ -381,9 +365,7 @@ async def _look_up_records(hostname: str) -> str:
     a namedtuple.
     """
     # Record domain name
-    async with await anyio.open_file(
-        "/var/log/check-xmpp-dns/requestledger.txt", "a"
-    ) as f:
+    async with await anyio.open_file("/var/log/check-xmpp-dns/requestledger.txt", "a") as f:
         await f.write("%s\n" % urllib.parse.quote(hostname))
 
     # Sanity check hostname
@@ -473,24 +455,16 @@ async def _root(request: starlette.requests.Request) -> starlette.responses.Resp
         if hostname:
             response_body = await _look_up_records(hostname)
         else:
-            response_body = await (
-                _get_jinja2_env()
-                .get_template("index_base.html.jinja")
-                .render_async(hostname="")
-            )
+            response_body = await _get_jinja2_env().get_template("index_base.html.jinja").render_async(hostname="")
 
-        return starlette.responses.Response(
-            response_body, headers={"Cache-Control": "no-cache"}
-        )
+        return starlette.responses.Response(response_body, headers={"Cache-Control": "no-cache"})
     except Exception:
         logging.exception("Unknown error handling request.")
         raise
 
 
 @contextlib.asynccontextmanager
-async def _lifespan(
-    _app: starlette.applications.Starlette,
-) -> collections.abc.AsyncGenerator[None, None]:
+async def _lifespan(_app: starlette.applications.Starlette) -> collections.abc.AsyncGenerator[None, None]:
     # Initialize the jinja2_env global.
     _get_jinja2_env()
 
