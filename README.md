@@ -28,8 +28,8 @@ First-time setup:
 1. Install Poetry. The steps for doing so are system-dependent. One option on macOS is `brew
 install poetry`
 2. ```
-poetry install --no-root --with=dev
-```
+   poetry install --no-root --with=dev
+   ```
 
 To run a local server that automatically reloads when code changes, run:
 ```
