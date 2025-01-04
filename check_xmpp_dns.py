@@ -375,7 +375,7 @@ async def _look_up_records(hostname: str) -> str:
         await f.write("%s\n" % urllib.parse.quote(hostname))
 
     # Sanity check hostname
-    if hostname.find("..") != -1:
+    if ".." in hostname:
         return await (
             _get_jinja2_env()
             .get_template("index_with_lookup_error.html.jinja")
