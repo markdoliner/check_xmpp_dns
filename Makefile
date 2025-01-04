@@ -12,7 +12,7 @@ check:
 
 .PHONY: run-local
 run-local:
-	poetry run uvicorn --factory --no-server-header --reload check_xmpp_dns:application
+	CHECK_XMPP_DNS_REQUEST_LEDGER_FILENAME=./requestledger.txt poetry run uvicorn --factory --no-server-header --reload check_xmpp_dns:application
 
 .PHONY: docker
 docker:

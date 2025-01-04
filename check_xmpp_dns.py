@@ -50,6 +50,7 @@ import collections.abc
 import contextlib
 import enum
 import logging
+import os
 import typing
 import urllib.parse
 
@@ -136,7 +137,7 @@ def _get_jinja2_env() -> jinja2.Environment:
             loader=jinja2.FileSystemLoader("templates"),
             undefined=jinja2.StrictUndefined,
         )
-        _jinja2_env.globals = {NoteType: NoteType}
+        _jinja2_env.globals = {"NoteType": NoteType}
 
     return _jinja2_env
 
@@ -367,7 +368,10 @@ async def _look_up_records(hostname: str) -> str:
     a namedtuple.
     """
     # Record domain name
-    async with await anyio.open_file("/var/log/check-xmpp-dns/requestledger.txt", "a") as f:
+    request_ledger_filename = (
+        os.environ.get("CHECK_XMPP_DNS_REQUEST_LEDGER_FILENAME") or "/var/log/check-xmpp-dns/requestledger.txt"
+    )
+    async with await anyio.open_file(request_ledger_filename, "a") as f:
         await f.write("%s\n" % urllib.parse.quote(hostname))
 
     # Sanity check hostname
