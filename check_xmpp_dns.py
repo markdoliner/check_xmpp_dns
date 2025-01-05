@@ -68,6 +68,9 @@ import starlette.requests
 import starlette.responses
 import starlette.routing
 
+_REQUEST_LEDGER_FILENAME_ENV_VAR: typing.Final = "CHECK_XMPP_DNS_REQUEST_LEDGER_FILENAME"
+_REQUEST_LEDGER_DEFAULT_FILENAME: typing.Final = "/var/log/check-xmpp-dns/requestledger.txt"
+
 _jinja2_env: jinja2.Environment | None = None
 
 
@@ -140,6 +143,12 @@ def _get_jinja2_env() -> jinja2.Environment:
         _jinja2_env.globals = {"NoteType": NoteType}
 
     return _jinja2_env
+
+
+async def _append_to_request_ledger(hostname: str) -> None:
+    request_ledger_filename = os.environ.get(_REQUEST_LEDGER_FILENAME_ENV_VAR) or _REQUEST_LEDGER_DEFAULT_FILENAME
+    async with await anyio.open_file(request_ledger_filename, "a") as f:
+        await f.write("%s\n" % urllib.parse.quote(hostname))
 
 
 def _sort_records_for_display(records: list[RecordForDisplay]) -> list[RecordForDisplay]:
@@ -364,15 +373,10 @@ async def _resolve_srv(dns_resolver: dns.asyncresolver.Resolver, qname: str) -> 
 
 
 async def _look_up_records(hostname: str) -> str:
-    """Looks up the DNS records for the given hostname and returns
-    a namedtuple.
+    """Looks up the DNS records for the given hostname and returns a str containing the full HTML
+    response body with the results.
     """
-    # Record domain name
-    request_ledger_filename = (
-        os.environ.get("CHECK_XMPP_DNS_REQUEST_LEDGER_FILENAME") or "/var/log/check-xmpp-dns/requestledger.txt"
-    )
-    async with await anyio.open_file(request_ledger_filename, "a") as f:
-        await f.write("%s\n" % urllib.parse.quote(hostname))
+    await _append_to_request_ledger(hostname)
 
     # Sanity check hostname
     if ".." in hostname:
@@ -382,22 +386,27 @@ async def _look_up_records(hostname: str) -> str:
             .render_async(hostname=hostname, error_message="Invalid hostname")
         )
 
+    # Look up the list of authoritative name servers for this domain and query
+    # them directly when looking up XMPP SRV records. We do this to avoid any
+    # potential caching from intermediate name servers.
+    authoritative_nameservers = await _get_authoritative_name_servers_for_domain(hostname)
+    if not authoritative_nameservers:
+        # Could not determine authoritative name servers for domain.
+        return await (
+            _get_jinja2_env()
+            .get_template("index_with_lookup_error.html.jinja")
+            .render_async(
+                hostname=hostname, error_message="Could not determine the authoritative name servers for this domain."
+            )
+        )
+
     # Create a DNS resolver to use for this request
     dns_resolver = dns.asyncresolver.Resolver()
 
     # Set a 2.5 second timeout on the resolver
     dns_resolver.lifetime = 2.5
 
-    # Look up the list of authoritative name servers for this domain and query
-    # them directly when looking up XMPP SRV records. We do this to avoid any
-    # potential caching from intermediate name servers.
-    new_nameservers = await _get_authoritative_name_servers_for_domain(hostname)
-    if new_nameservers:
-        dns_resolver.nameservers = new_nameservers
-    else:
-        # Couldn't determine authoritative name servers for domain.
-        # TODO: Log something? Show message to user?
-        pass
+    dns_resolver.nameservers = authoritative_nameservers
 
     # Look up records using four queries.
     answers = list[AnswerTuple]()
@@ -455,7 +464,7 @@ async def _look_up_records(hostname: str) -> str:
     )
 
 
-async def _root(request: starlette.requests.Request) -> starlette.responses.Response:
+async def _handle_root(request: starlette.requests.Request) -> starlette.responses.Response:
     try:
         hostname = request.query_params.get("h")
         if hostname:
@@ -471,6 +480,8 @@ async def _root(request: starlette.requests.Request) -> starlette.responses.Resp
 
 @contextlib.asynccontextmanager
 async def _lifespan(_app: starlette.applications.Starlette) -> collections.abc.AsyncGenerator[None, None]:
+    logging.basicConfig(level="INFO")
+
     # Initialize the jinja2_env global.
     _get_jinja2_env()
 
@@ -481,6 +492,6 @@ def application() -> starlette.applications.Starlette:
     return starlette.applications.Starlette(
         lifespan=_lifespan,
         routes=[
-            starlette.routing.Route("/", _root),
+            starlette.routing.Route("/", _handle_root),
         ],
     )
