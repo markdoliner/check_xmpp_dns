@@ -58,8 +58,12 @@ import urllib.parse
 import anyio
 import dns.asyncresolver
 import dns.exception
+import dns.name
+import dns.nameserver
 import dns.rdata
 import dns.rdatatype
+import dns.rdtypes.IN.A
+import dns.rdtypes.IN.AAAA
 import dns.rdtypes.IN.SRV
 import dns.resolver
 import jinja2
@@ -103,7 +107,7 @@ STANDARD_PORTS = {
 
 
 class AnswerTuple(typing.NamedTuple):
-    answer: dns.resolver.Answer
+    answer: dns.resolver.Answer | None
     client_or_server: ClientOrServerType
     tls_type: TlsType
 
@@ -174,7 +178,7 @@ def _build_records_for_display(
     records_for_display = list[RecordForDisplay]()
 
     for answers in answers_list:
-        if answers.client_or_server == client_or_server:
+        if answers.client_or_server == client_or_server and answers.answer is not None:
             for record in _assert_srv_records(answers.answer):
                 records_for_display.append(_build_record_for_display(record, answers, answers_list))
 
@@ -195,11 +199,13 @@ def _build_records_for_display(
     )
 
 
-def _has_record_for_host_and_port(answers: AnswerTuple, target: str, port: int) -> bool:
+def _has_record_for_host_and_port(answers: AnswerTuple, target: dns.name.Name, port: int) -> bool:
     """Return True if any record in `answers` points to the given
     `target` and `port`.
     """
-    return any(record.target == target and record.port == port for record in _assert_srv_records(answers.answer))
+    return answers.answer is not None and any(
+        record.target == target and record.port == port for record in _assert_srv_records(answers.answer)
+    )
 
 
 def _build_record_for_display(
@@ -254,7 +260,9 @@ def _build_record_for_display(
     )
 
 
-async def _get_authoritative_name_servers_for_domain(domain: str) -> list[str] | None:
+async def _get_authoritative_name_servers_for_domain(
+    domain: str,
+) -> collections.abc.Sequence[str | dns.nameserver.Nameserver] | None:
     """Return a list of strings containing IP addresses of the name servers
     that are considered to be authoritative for the given domain.
 
@@ -303,7 +311,7 @@ async def _get_authoritative_name_servers_for_domain(domain: str) -> list[str] |
             # stale, up to the lifetime of the TTL."
             return None
 
-        new_nameservers = []
+        new_nameservers = list[str]()
         for record in answer:
             if record.rdtype == dns.rdatatype.NS:
                 # Got the hostname of a nameserver. Resolve it to an IP.
@@ -335,7 +343,7 @@ async def _get_authoritative_name_servers_for_domain(domain: str) -> list[str] |
                     # stale, up to the lifetime of the TTL."
                     return None
                 for record2 in answer2:
-                    if record2.rdtype in (dns.rdatatype.A, dns.rdatatype.AAAA):
+                    if isinstance(record2, (dns.rdtypes.IN.A.A, dns.rdtypes.IN.AAAA.AAAA)):
                         # Add the IP to the list of IPs.
                         new_nameservers.append(record2.address)
                     else:
@@ -352,23 +360,23 @@ async def _get_authoritative_name_servers_for_domain(domain: str) -> list[str] |
     return dns_resolver.nameservers
 
 
-async def _resolve_srv(dns_resolver: dns.asyncresolver.Resolver, qname: str) -> dns.resolver.Answer:
+async def _resolve_srv(dns_resolver: dns.asyncresolver.Resolver, qname: str) -> dns.resolver.Answer | None:
     try:
         records = await dns_resolver.resolve(qname, rdtype=dns.rdatatype.SRV)
     except dns.exception.SyntaxError:
         # TODO: Show "invalid hostname" for this
-        records = []
+        records = None
     except dns.resolver.NXDOMAIN:
-        records = []
+        records = None
     except dns.resolver.NoAnswer:
         # TODO: Show a specific message for this
-        records = []
+        records = None
     except dns.resolver.NoNameservers:
         # TODO: Show a specific message for this
-        records = []
+        records = None
     except dns.resolver.Timeout:
         # TODO: Show a specific message for this
-        records = []
+        records = None
     return records
 
 

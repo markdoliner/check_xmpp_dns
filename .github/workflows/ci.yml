@@ -33,6 +33,9 @@ jobs:
       - name: Check code formatting with Ruff
         run: poetry run ruff format --diff check_xmpp_dns.py
 
+      - name: Check types with Mypy
+        run: poetry run mypy check_xmpp_dns.py
+
   build-and-push-docker-image:
     # This job was copied from https://docs.github.com/en/actions/use-cases-and-examples/publishing-packages/publishing-docker-images#publishing-images-to-github-packages
     # See that page for updates and more details.
