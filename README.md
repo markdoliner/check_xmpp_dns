@@ -13,8 +13,9 @@ Dependencies
 * Python jinja library. Used to render the HTML templates.
   * Homepage: https://jinja.palletsprojects.com/
 * Python Starlette library.
-  * Homepage: http://www.gevent.org/
+  * Homepage: https://www.starlette.io/
 * Uvicorn. Or you could use any other ASGI server.
+  * Homepage: https://www.uvicorn.org/
 
 
 Local Development
