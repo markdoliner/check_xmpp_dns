@@ -8,18 +8,13 @@ Source available at https://github.com/markdoliner/check_xmpp_dns
 
 Dependencies
 ============
-* Python dns library. Use to query DNS servers directly.
+* Python dns library. Used to query DNS servers directly.
   * Homepage: http://www.dnspython.org/
 * Python jinja library. Used to render the HTML templates.
   * Homepage: https://jinja.palletsprojects.com/
 * Python Starlette library.
   * Homepage: http://www.gevent.org/
-* (optional) Uvicorn. Only needed if you want to use the included systemd service
-  * On Ubuntu: apt-get install gunicorn3
-  * TODO MARK: Update the service and tmpfiles thing for uvicorn. Or Docker.
-  * (be sure paths, user and permissions are set properly). \
-    Copy `check_xmpp_dns.service` to `/etc/systemd/system/check_xmpp_dns.service`
-    and copy `tmpfiles.d_gunicorn.conf` to `/etc/tmpfiles.d/gunicorn.conf`
+* Uvicorn. Or you could use any other ASGI server.
 
 
 Local Development
