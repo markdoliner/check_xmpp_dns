@@ -472,7 +472,7 @@ async def _look_up_records(hostname: str) -> str:
     )
 
 
-async def _handle_root(request: starlette.requests.Request) -> starlette.responses.Response:
+async def _handle_root(request: starlette.requests.Request) -> starlette.responses.HTMLResponse:
     try:
         hostname = request.query_params.get("h")
         if hostname:
@@ -480,7 +480,7 @@ async def _handle_root(request: starlette.requests.Request) -> starlette.respons
         else:
             response_body = await _get_jinja2_env().get_template("index_base.html.jinja").render_async(hostname="")
 
-        return starlette.responses.Response(response_body, headers={"Cache-Control": "no-cache"})
+        return starlette.responses.HTMLResponse(response_body, headers={"Cache-Control": "no-cache"})
     except Exception:
         logging.exception("Unknown error handling request.")
         raise
