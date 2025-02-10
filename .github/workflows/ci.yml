@@ -24,7 +24,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pipx install poetry==1.8.5
+          pipx install poetry==2.0.1
           poetry install --no-root --with=dev
 
       - name: Lint code with Ruff
