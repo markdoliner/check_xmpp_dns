@@ -16,7 +16,7 @@ RUN ["install", "-o", "check-xmpp-dns", "-g", "check-xmpp-dns", "-d", "/var/log/
 
 # Install poetry.
 # The version is pinned as a best practice. It should be bumped regularly.
-RUN ["pip", "install", "poetry==1.8.5"]
+RUN ["pip", "install", "poetry==2.0.1"]
 
 # Copy the minimum files needed to install dependencies.
 # This is done at an early Docker layer so they don't need to be reinstalled each time the
