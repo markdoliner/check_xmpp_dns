@@ -77,6 +77,8 @@ _REQUEST_LEDGER_DEFAULT_FILENAME: typing.Final = "/var/log/check-xmpp-dns/reques
 
 _jinja2_env: jinja2.Environment | None = None
 
+logger: typing.Final = logging.getLogger(__name__)
+
 
 @enum.unique
 class ClientOrServerType(enum.Enum):
@@ -482,7 +484,7 @@ async def _handle_root(request: starlette.requests.Request) -> starlette.respons
 
         return starlette.responses.HTMLResponse(response_body, headers={"Cache-Control": "no-cache"})
     except Exception:
-        logging.exception("Unknown error handling request.")
+        logger.exception("Unknown error handling request.")
         raise
 
 
