@@ -40,11 +40,6 @@
 # TODO: Add JavaScript to strip leading and trailing whitespace in the
 #       hostname before submitting the form, so that the hostname is pretty in
 #       the URL.
-# TODO: Clean up types and make type checking happen automatically during
-#       local development.
-#
-
-# import gevent.monkey; gevent.monkey.patch_all()
 
 import collections.abc
 import contextlib
