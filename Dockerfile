@@ -36,8 +36,11 @@ RUN ["poetry", "install", "--compile", "--no-ansi", "--no-cache", "--no-director
 
 # Copy application files.
 # chmod is used to remove write access.
-COPY --chmod=555 templates templates
+COPY --chmod=444 templates templates
 COPY --chmod=555 check_xmpp_dns.py .
+
+# But the directory needs to be executable. Ugh, there should be a nicer way to do this. There isn't.
+RUN chmod 555 templates
 
 # Compile Python files for faster execution.
 RUN ["python", "-m", "compileall", "check_xmpp_dns.py"]
