@@ -36,7 +36,7 @@ RUN ["poetry", "install", "--compile", "--no-ansi", "--no-cache", "--no-director
 
 # Copy application files.
 # chmod is used to remove write access.
-COPY --chmod=444 templates templates
+COPY --chmod=555 templates templates
 COPY --chmod=555 check_xmpp_dns.py .
 
 # Compile Python files for faster execution.
