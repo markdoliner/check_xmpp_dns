@@ -155,8 +155,9 @@ async def _append_to_request_ledger(hostname: str) -> None:
 def _sort_records_for_display(records: list[RecordForDisplay]) -> list[RecordForDisplay]:
     return sorted(
         records,
-        key=lambda record: "%10d %10d %50s %d"
-        % (record.priority, 1000000000 - record.weight, record.target, record.port),
+        key=lambda record: (
+            "%10d %10d %50s %d" % (record.priority, 1000000000 - record.weight, record.target, record.port)
+        ),
     )
 
 
