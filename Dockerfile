@@ -1,7 +1,7 @@
 # These steps are loosely ordered from "rarely changes" to "frequently changes" to take advantage
 # of Docker build caching, so that builds during the development process are as fast as possible.
 
-FROM python:3.13-alpine
+FROM python:3.15-alpine
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ RUN ["install", "-o", "check-xmpp-dns", "-g", "check-xmpp-dns", "-d", "/var/log/
 
 # Install poetry.
 # The version is pinned as a best practice. It should be bumped regularly.
-RUN ["pip", "install", "poetry==2.0.1"]
+RUN ["pip", "install", "poetry==2.5.1"]
 
 # Copy the minimum files needed to install dependencies.
 # This is done at an early Docker layer so they don't need to be reinstalled each time the

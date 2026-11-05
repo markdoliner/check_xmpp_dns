@@ -15,16 +15,16 @@ jobs:
 
     steps:
       - name: Check out repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
-          python-version: "3.10"
+          python-version: "3.15"
 
       - name: Install dependencies
         run: |
-          pipx install poetry==2.0.1
+          pipx install poetry==2.5.1
           poetry install --no-root --with=dev
 
       - name: Lint code with Ruff
@@ -57,13 +57,13 @@ jobs:
 
     steps:
       - name: Check out repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Log in to the container registry using the account and password that will publish the
       # packages. Once published, the packages are scoped to the account defined here.
       # For more info see https://github.com/docker/login-action
       - name: Log in to the container registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -74,19 +74,19 @@ jobs:
       # For more info see https://github.com/docker/metadata-action
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       # This is needed for multi-platform builds.
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # Build the image using the repo's Dockerfile and push to the registry.
       # For more info see https://github.com/docker/build-push-action
       - name: Build Docker image. Push to registry if building the branch "main"
         id: push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -101,7 +101,7 @@ jobs:
         # For more info see https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations
       - name: Generate artifact attestation
         if: ${{ env.SHOULD_PUSH == 'true' }}
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest@v4
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
           subject-digest: ${{ steps.push.outputs.digest }}
