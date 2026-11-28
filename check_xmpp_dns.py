@@ -67,6 +67,8 @@ import starlette.requests
 import starlette.responses
 import starlette.routing
 
+_GOOGLE_TAG_MANAGER_MEASUREMENT_ID_ENV_VAR: typing.Final = "GOOGLE_TAG_MANAGER_MEASUREMENT_ID"
+
 _REQUEST_LEDGER_FILENAME_ENV_VAR: typing.Final = "CHECK_XMPP_DNS_REQUEST_LEDGER_FILENAME"
 _REQUEST_LEDGER_DEFAULT_FILENAME: typing.Final = "/var/log/check-xmpp-dns/requestledger.txt"
 
@@ -141,7 +143,10 @@ def _get_jinja2_env() -> jinja2.Environment:
             loader=jinja2.FileSystemLoader("templates"),
             undefined=jinja2.StrictUndefined,
         )
-        _jinja2_env.globals = {"NoteType": NoteType}
+        _jinja2_env.globals = {
+            _GOOGLE_TAG_MANAGER_MEASUREMENT_ID_ENV_VAR: os.environ.get(_GOOGLE_TAG_MANAGER_MEASUREMENT_ID_ENV_VAR),
+            "NoteType": NoteType,
+        }
 
     return _jinja2_env
 
